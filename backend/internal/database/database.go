@@ -6,12 +6,20 @@ import (
 	"log"
 	"time"
 
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func NewPool(databaseURL string) *pgxpool.Pool {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+
+	// Run migrations
+	if err := RunMigrations(databaseURL); err != nil {
+		log.Printf("Warning: migrations failed: %v", err)
+	}
 
 	config, err := pgxpool.ParseConfig(databaseURL)
 	if err != nil {
@@ -34,4 +42,16 @@ func NewPool(databaseURL string) *pgxpool.Pool {
 
 	fmt.Println("Connected to PostgreSQL")
 	return pool
+}
+
+func RunMigrations(databaseURL string) error {
+	m, err := migrate.New("file://migrations", databaseURL)
+	if err != nil {
+		return err
+	}
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return err
+	}
+	fmt.Println("Database migrations applied")
+	return nil
 }

@@ -1,15 +1,20 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
+	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
+	"forest-bd-viewer/internal/auth"
 	"forest-bd-viewer/internal/cache"
 	"forest-bd-viewer/internal/config"
 	"forest-bd-viewer/internal/database"
+	"forest-bd-viewer/internal/graph"
+	"forest-bd-viewer/internal/graph/generated"
 )
 
 func main() {
@@ -23,6 +28,9 @@ func main() {
 	// Initialize Redis
 	redisClient := cache.NewRedisClient(cfg.RedisAddr())
 	defer redisClient.Close()
+
+	// Initialize auth service
+	authSvc := auth.NewService(cfg.JWTSecret, cfg.JWTExpiryHours)
 
 	// Initialize Echo
 	e := echo.New()
@@ -38,6 +46,18 @@ func main() {
 		AllowCredentials: true,
 	}))
 
+	// Inject Echo context into request context so GraphQL resolvers can set cookies
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			ctx := context.WithValue(c.Request().Context(), graph.EchoContextKey, c)
+			c.SetRequest(c.Request().WithContext(ctx))
+			return next(c)
+		}
+	})
+
+	// JWT auth middleware (must run after echo context injection)
+	e.Use(authSvc.Middleware())
+
 	// Health check
 	e.GET("/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{
@@ -46,6 +66,13 @@ func main() {
 			"redis":    "connected",
 		})
 	})
+
+	// GraphQL endpoint
+	graphqlHandler := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{
+		Resolvers: &graph.Resolver{DB: pool, AuthSvc: authSvc},
+	}))
+	e.POST("/graphql", echo.WrapHandler(graphqlHandler))
+	e.GET("/graphql", echo.WrapHandler(graphqlHandler))
 
 	// Start server
 	addr := fmt.Sprintf(":%s", cfg.BackendPort)

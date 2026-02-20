@@ -8,11 +8,12 @@ A full-stack geospatial application for visualizing French forest data (BD Forê
 ## 🌲 Overview
 
 This project allows authenticated users to:
-1.  **Visualize** forest data for Île-de-France departments (77, 78, 91, 95).
-2.  **Interact** with a hierarchical map (Region → Department → Commune).
-3.  **Inspect** forest species and cover types.
-4.  **Analyze** custom areas using a polygon drawing tool.
-5.  **Overlay** official Cadastre parcel data.
+
+1. **Visualize** forest data for Île-de-France departments (77, 78, 91, 95).
+2. **Interact** with a hierarchical map (Region → Department → Commune).
+3. **Inspect** forest species and cover types.
+4. **Analyze** custom areas using a polygon drawing tool.
+5. **Overlay** official Cadastre parcel data.
 
 ## 🏗 Architecture
 
@@ -20,6 +21,7 @@ This project allows authenticated users to:
 
 | Component | Technology | Reasoning |
 |-----------|------------|-----------|
+
 | **Frontend** | Next.js 14, TypeScript, Redux Toolkit | Server-side rendering, robust state management |
 | **Map Engine** | Mapbox GL JS | High-performance vector tile rendering |
 | **Backend** | Go (1.22+), Echo, gqlgen | High-concurrency spatial API, type-safe GraphQL |
@@ -75,12 +77,14 @@ forest_bd_viewer/
 ## 🚀 Getting Started
 
 ### Prerequisites
+
 - Docker & Docker Compose
 - Mapbox Access Token (free tier)
 
 ### Setup
 
-1.  **Clone & Config**
+1. **Clone & Config**
+
     ```bash
     git clone <repo>
     cd forest_bd_viewer
@@ -88,15 +92,18 @@ forest_bd_viewer/
     # Edit .env and set NEXT_PUBLIC_MAPBOX_TOKEN
     ```
 
-2.  **Run with Docker**
+2. **Run with Docker**
+
     ```bash
     docker-compose up --build
     ```
+
     - Frontend: `http://localhost:3000`
     - Backend Health: `http://localhost:8080/health`
 
-3.  **Data Import (One-time)**
+3. **Data Import (One-time)**
     *Note: The app starts with an empty database. You need to run the import scripts to populate forest data.*
+
     ```bash
     ./scripts/download-data.sh
     ./scripts/import-data.sh  # Requires ogr2ogr or run inside docker
@@ -119,4 +126,5 @@ forest_bd_viewer/
 - **Database**: Data persists in `pgdata` volume.
 
 ## 📄 License
+
 MIT
