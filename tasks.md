@@ -15,7 +15,7 @@
 - [x] Backend: gqlgen schema + resolvers for register/login/me
 - [x] Backend: JWT middleware, bcrypt passwords
 - [x] Frontend: login + register pages, auth context, protected routes
-- [ ] Verify: full auth cycle in browser
+- [x] Verify: full auth cycle in browser
 
 ## Stage 3 — Data Import & Forest Layer
 

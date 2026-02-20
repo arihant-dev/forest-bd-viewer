@@ -44,7 +44,7 @@ graph LR
 
 ## 📂 Project Structure
 
-```
+```bash
 forest_bd_viewer/
 ├── backend/                # Go Backend
 │   ├── cmd/server/         # Entry point
@@ -112,7 +112,7 @@ forest_bd_viewer/
 ## 🗺 Features & Roadmap
 
 - [x] **Infrastructure**: Docker Compose, PostGIS, Redis, Go+Next.js skeletons
-- [ ] **Authentication**: Register/Login with JWT cookies
+- [x] **Authentication**: Register/Login with JWT cookies
 - [ ] **Data**: Import BD Forêt V2 (Dept 77, 78, 91, 95)
 - [ ] **Visualization**: Vector tiles with species color-coding
 - [ ] **Drill-down**: Region → Commune interaction
