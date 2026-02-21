@@ -9,7 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@mapbox/mapbox-gl-draw": "^1.5.1",
     "@reduxjs/toolkit": "^2.11.2",
+    "@types/mapbox__mapbox-gl-draw": "^1.4.9",
     "graphql": "^16.12.0",
     "graphql-request": "^7.4.0",
     "mapbox-gl": "^3.18.1",
