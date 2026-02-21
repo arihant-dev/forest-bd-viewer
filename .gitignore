@@ -19,6 +19,10 @@ backend/vendor/
 backend/coverage.out
 backend/coverage.html
 backend/bin/
+# gqlgen generates domain-specific resolver files; the old monolithic file is superseded
+backend/internal/graph/schema.resolvers.go
+# schema is now split into domain files; the old monolithic file is superseded
+backend/internal/graph/schema/schema.graphql
 
 # Dependencies
 node_modules/
