@@ -15,9 +15,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /server ./cmd/server
 RUN chmod +x /server
 
 # Run stage
-FROM alpine:3.19
+FROM ghcr.io/osgeo/gdal:alpine-small-latest
 
-RUN apk add --no-cache ca-certificates tzdata
+RUN apk add --no-cache ca-certificates tzdata postgresql-client bash python3 py3-psycopg2
 
 WORKDIR /app
 
