@@ -9,7 +9,7 @@ export type Locale = 'en' | 'fr';
 const dict = {
   // AnalysisPanel
   'analysis.title':          { en: 'Polygon Analysis',                          fr: 'Analyse de polygone' },
-  'analysis.hint':           { en: 'Draw a polygon on the map to analyse forest cover.\nClick to place points, double-click to finish.', fr: 'Dessinez un polygone sur la carte pour analyser la couverture forestière.\nCliquez pour placer des points, double-cliquez pour terminer.' },
+  'analysis.hint':           { en: 'Draw a polygon on the map to analyse forest cover.\nClick to place points, then press Finish.', fr: 'Dessinez un polygone sur la carte pour analyser la couverture forestière.\nCliquez pour placer des points, puis appuyez sur Terminer.' },
   'analysis.loading':        { en: 'Analysing...',                              fr: 'Analyse en cours...' },
   'analysis.error':          { en: 'An error occurred.',                        fr: 'Une erreur est survenue.' },
   'analysis.totalArea':      { en: 'Total area',                                fr: 'Surface totale' },
@@ -24,8 +24,10 @@ const dict = {
   // Draw button
   'draw.analyse':            { en: 'Analyse area',                              fr: 'Analyser une zone' },
   'draw.cancel':             { en: 'Cancel',                                    fr: 'Annuler' },
+  'draw.finish':             { en: 'Finish',                                    fr: 'Terminer' },
   'draw.titleStart':         { en: 'Draw a polygon to analyse forest cover',    fr: 'Tracer un polygone et analyser la couverture forestière' },
   'draw.titleCancel':        { en: 'Cancel drawing',                            fr: 'Annuler le dessin' },
+  'draw.titleFinish':        { en: 'Complete the polygon',                      fr: 'Terminer le polygone' },
 
   // Legend — tier labels
   'legend.regions':          { en: 'Regions (zoom 5\u20137)',                   fr: 'Régions (zoom 5\u20137)' },

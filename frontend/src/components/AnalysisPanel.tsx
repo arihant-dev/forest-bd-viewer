@@ -2,7 +2,7 @@
 
 import { useAppDispatch, useAppSelector } from '@/store';
 import { clearAnalysis } from '@/store/analysisSlice';
-import { useI18n } from '@/lib/i18n';
+import { useI18n, type DictKey } from '@/lib/i18n';
 import styles from './AnalysisPanel.module.css';
 
 const TFV_COLORS: Record<string, string> = {
@@ -96,14 +96,18 @@ export default function AnalysisPanel({ onClear }: Props) {
                     {result.tfvBreakdown.length > 0 && (
                         <section className={styles.section}>
                             <h4 className={styles.sectionTitle}>{t('analysis.tfvSection')}</h4>
-                            {result.tfvBreakdown.map((row) => (
+                            {result.tfvBreakdown.map((row) => {
+                                const tfvKey = `tfv.${row.codeTfv}` as DictKey;
+                                const translated = t(tfvKey);
+                                const label = translated.startsWith('tfv.') ? row.libTfv : translated;
+                                return (
                                 <div key={row.codeTfv} className={styles.breakdownRow}>
                                     <span
                                         className={styles.swatch}
                                         style={{ background: TFV_COLORS[row.codeTfv] ?? DEFAULT_COLOR }}
                                     />
-                                    <span className={styles.breakdownLabel} title={row.libTfv}>
-                                        {row.libTfv}
+                                    <span className={styles.breakdownLabel} title={label}>
+                                        {label}
                                     </span>
                                     <span className={styles.breakdownBar}>
                                         <span
@@ -116,7 +120,8 @@ export default function AnalysisPanel({ onClear }: Props) {
                                     </span>
                                     <span className={styles.breakdownPct}>{fmt(row.pct, 0)} %</span>
                                 </div>
-                            ))}
+                                );
+                            })}
                         </section>
                     )}
 

@@ -85,19 +85,53 @@ func (q *Queries) AnalyzePolygon(ctx context.Context, geojsonGeom string) (*Poly
 	}
 
 	// ── 2. TFV breakdown ──────────────────────────────────────────────────────
+	// Normalize granular BD Forêt V2 codes (e.g. FF1-09-09, FF1G01-01) and
+	// legacy TFIFN codes (e.g. AFJ, CPV, 30) to the 9 top-level TFV categories
+	// so the frontend can translate and display them consistently.
 	const tfvSQL = `
-		WITH poly AS (SELECT ST_GeomFromGeoJSON($1) AS geom)
+		WITH poly AS (SELECT ST_GeomFromGeoJSON($1) AS geom),
+		intersected AS (
+			SELECT
+				CASE
+					WHEN fp.code_tfv LIKE 'FF1%' OR fp.code_tfv = 'FF0'
+						OR fp.code_tfv IN ('AFJ','AFV','HFW','HFZ','QF') THEN 'FF1'
+					WHEN fp.code_tfv LIKE 'FF2%'
+						OR fp.code_tfv IN ('CPJ','CPV','CRJ','CRV')      THEN 'FF2'
+					WHEN fp.code_tfv LIKE 'FF3%'
+						OR fp.code_tfv IN ('FR','MR')                    THEN 'FF3'
+					WHEN fp.code_tfv LIKE 'FO1%'
+						OR fp.code_tfv = '30'                            THEN 'FO1'
+					WHEN fp.code_tfv LIKE 'FO2%'                         THEN 'FO2'
+					WHEN fp.code_tfv LIKE 'FO3%'                         THEN 'FO3'
+					WHEN fp.code_tfv LIKE 'LA%'
+						OR fp.code_tfv = '40'                            THEN 'LA'
+					WHEN fp.code_tfv = 'FP'
+						OR fp.code_tfv = '50'                            THEN 'FP'
+					ELSE 'FF4'
+				END AS norm_code,
+				ST_Area(ST_Transform(ST_Intersection(fp.geom, poly.geom), 2154)) / 10000.0 AS area_ha
+			FROM poly
+			JOIN forest_parcels fp
+				ON fp.geom && poly.geom
+				AND ST_Intersects(fp.geom, poly.geom)
+		)
 		SELECT
-			fp.code_tfv,
-			COALESCE(NULLIF(fp.lib_tfv, ''), fp.code_tfv) AS lib_tfv,
-			SUM(
-				ST_Area(ST_Transform(ST_Intersection(fp.geom, poly.geom), 2154)) / 10000.0
-			) AS area_ha
-		FROM poly
-		JOIN forest_parcels fp
-			ON fp.geom && poly.geom
-			AND ST_Intersects(fp.geom, poly.geom)
-		GROUP BY fp.code_tfv, fp.lib_tfv
+			norm_code AS code_tfv,
+			CASE norm_code
+				WHEN 'FF1' THEN 'Forêt fermée feuillus'
+				WHEN 'FF2' THEN 'Forêt fermée conifères'
+				WHEN 'FF3' THEN 'Forêt fermée mixte'
+				WHEN 'FF4' THEN 'Forêt fermée autre'
+				WHEN 'FO1' THEN 'Forêt ouverte feuillus'
+				WHEN 'FO2' THEN 'Forêt ouverte conifères'
+				WHEN 'FO3' THEN 'Forêt ouverte mixte'
+				WHEN 'LA'  THEN 'Lande'
+				WHEN 'FP'  THEN 'Peupleraie'
+				ELSE norm_code
+			END AS lib_tfv,
+			SUM(area_ha) AS area_ha
+		FROM intersected
+		GROUP BY norm_code
 		ORDER BY area_ha DESC
 	`
 

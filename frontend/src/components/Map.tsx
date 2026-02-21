@@ -9,6 +9,7 @@ import styles from './Map.module.css';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setMapState, saveMapStateThunk } from '@/store/mapSlice';
 import { startDrawing, clearAnalysis, analyzePolygonThunk } from '@/store/analysisSlice';
+import { useI18n, type DictKey } from '@/lib/i18n';
 import AnalysisPanel from './AnalysisPanel';
 
 // ── BD Forêt V2 classification ────────────────────────────────────────────────
@@ -25,17 +26,7 @@ const TFV_COLORS: Record<string, string> = {
   FP: '#aed9c9',
 };
 
-const TFV_LABELS: Record<string, string> = {
-  FF1: 'Forêt fermée feuillus',
-  FF2: 'Forêt fermée conifères',
-  FF3: 'Forêt fermée mixte',
-  FF4: 'Forêt fermée autre',
-  FO1: 'Forêt ouverte feuillus',
-  FO2: 'Forêt ouverte conifères',
-  FO3: 'Forêt ouverte mixte',
-  LA: 'Lande',
-  FP: 'Peupleraie',
-};
+const TFV_CODES = Object.keys(TFV_COLORS);
 
 const DEFAULT_FOREST_COLOR = '#a8d5a2';
 
@@ -84,13 +75,6 @@ function zoomTier(zoom: number): ZoomTier {
   return 'cadastre';
 }
 
-const TIER_LABELS: Record<ZoomTier, string> = {
-  regions: 'Régions (zoom 5–7)',
-  departements: 'Départements (zoom 8–10)',
-  communes: 'Communes (zoom 11–13)',
-  foret: 'BD Forêt V2 (zoom 14)',
-  cadastre: 'BD Forêt + Parcelles (zoom 15+)',
-};
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -107,6 +91,23 @@ export default function Map() {
   const { center, zoom: savedZoom, hydrated } = useAppSelector((s) => s.map);
   const isLoggedIn = useAppSelector((s) => s.auth.user !== null);
   const analysisStatus = useAppSelector((s) => s.analysis.status);
+  const { t } = useI18n();
+
+  // Refs so map event handlers (set up once) always see the latest values
+  const tRef = useRef(t);
+  tRef.current = t;
+  const analysisStatusRef = useRef(analysisStatus);
+  analysisStatusRef.current = analysisStatus;
+
+  // ── Static polygon helpers ──────────────────────────────────────────────
+
+  const removeStaticPolygon = useCallback(() => {
+    const m = map.current;
+    if (!m) return;
+    if (m.getLayer('analysis-polygon-fill')) m.removeLayer('analysis-polygon-fill');
+    if (m.getLayer('analysis-polygon-outline')) m.removeLayer('analysis-polygon-outline');
+    if (m.getSource('analysis-polygon')) m.removeSource('analysis-polygon');
+  }, []);
 
   // ── Draw control handlers ─────────────────────────────────────────────────
 
@@ -120,9 +121,16 @@ export default function Map() {
     } else {
       // Start: delete any previous polygon and enter draw_polygon mode
       drawRef.current.deleteAll();
+      removeStaticPolygon();
       dispatch(startDrawing());
       drawRef.current.changeMode('draw_polygon');
     }
+  };
+
+  const handleFinishClick = () => {
+    if (!drawRef.current) return;
+    // Completing the polygon triggers draw.create if >= 3 vertices
+    drawRef.current.changeMode('simple_select');
   };
 
   // Called from AnalysisPanel's close/clear button
@@ -131,7 +139,8 @@ export default function Map() {
       drawRef.current.deleteAll();
       drawRef.current.changeMode('simple_select');
     }
-  }, []);
+    removeStaticPolygon();
+  }, [removeStaticPolygon]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -334,9 +343,10 @@ export default function Map() {
 
       // ── Click: Region → zoom to region ───────────────────────────────
       m.on('click', 'regions-fill', (e) => {
+        if (analysisStatusRef.current === 'drawing') return;
         if (!e.features || e.features.length === 0) return;
         const feat = e.features[0];
-        const nom: string = feat.properties?.nom ?? 'Région';
+        const nom: string = feat.properties?.nom ?? tRef.current('popup.region');
         if (feat.geometry) {
           m.fitBounds(geometryBounds(feat.geometry as GeoJSON.Geometry), { padding: 40 });
         }
@@ -350,9 +360,10 @@ export default function Map() {
 
       // ── Click: Department → zoom to department ────────────────────────
       m.on('click', 'departements-fill', (e) => {
+        if (analysisStatusRef.current === 'drawing') return;
         if (!e.features || e.features.length === 0) return;
         const feat = e.features[0];
-        const nom: string = feat.properties?.nom ?? 'Département';
+        const nom: string = feat.properties?.nom ?? tRef.current('popup.department');
         if (feat.geometry) {
           m.fitBounds(geometryBounds(feat.geometry as GeoJSON.Geometry), { padding: 40 });
         }
@@ -366,9 +377,10 @@ export default function Map() {
 
       // ── Click: Commune → zoom to commune ─────────────────────────────
       m.on('click', 'communes-fill', (e) => {
+        if (analysisStatusRef.current === 'drawing') return;
         if (!e.features || e.features.length === 0) return;
         const feat = e.features[0];
-        const nom: string = feat.properties?.nom ?? 'Commune';
+        const nom: string = feat.properties?.nom ?? tRef.current('popup.municipality');
         if (feat.geometry) {
           m.fitBounds(geometryBounds(feat.geometry as GeoJSON.Geometry), { padding: 40 });
         }
@@ -382,10 +394,13 @@ export default function Map() {
 
       // ── Click: BD Forêt → feature popup ──────────────────────────────
       m.on('click', 'foret-fill', (e) => {
+        if (analysisStatusRef.current === 'drawing') return;
         if (!e.features || e.features.length === 0) return;
         const props = e.features[0].properties ?? {};
         const codeTfv: string = props.code_tfv ?? '—';
-        const libTfv: string = props.lib_tfv ?? TFV_LABELS[codeTfv] ?? '—';
+        const libTfv: string = props.lib_tfv ?? '—';
+        const translated = tRef.current(`tfv.${codeTfv}` as DictKey);
+        const displayName = translated.startsWith('tfv.') ? libTfv : translated;
         const essence1: string = props.essence1 ?? '—';
         const dept: string = props.departement ?? '—';
 
@@ -394,10 +409,10 @@ export default function Map() {
           .setLngLat(e.lngLat)
           .setHTML(
             `<div style="font-family:sans-serif;font-size:13px;line-height:1.6">
-              <strong>${libTfv}</strong><br/>
-              <span style="color:#555">Code TFV:</span> ${codeTfv}<br/>
-              <span style="color:#555">Essence principale:</span> ${essence1}<br/>
-              <span style="color:#555">Département:</span> ${dept}
+              <strong>${displayName}</strong><br/>
+              <span style="color:#555">${tRef.current('popup.tfvCode')}:</span> ${codeTfv}<br/>
+              <span style="color:#555">${tRef.current('popup.mainSpecies')}:</span> ${essence1}<br/>
+              <span style="color:#555">${tRef.current('popup.department')}:</span> ${dept}
             </div>`
           )
           .addTo(m);
@@ -405,6 +420,7 @@ export default function Map() {
 
       // ── Click: Cadastre → parcel popup ────────────────────────────────
       m.on('click', 'cadastre-fill', (e) => {
+        if (analysisStatusRef.current === 'drawing') return;
         if (!e.features || e.features.length === 0) return;
         const props = e.features[0].properties ?? {};
         const section: string = props.section ?? '—';
@@ -416,22 +432,49 @@ export default function Map() {
           .setLngLat(e.lngLat)
           .setHTML(
             `<div style="font-family:sans-serif;font-size:13px;line-height:1.6">
-              <strong>Parcelle cadastrale</strong><br/>
-              <span style="color:#555">Section:</span> ${section}<br/>
-              <span style="color:#555">Numéro:</span> ${numero}<br/>
-              <span style="color:#555">Commune:</span> ${commune}
+              <strong>${tRef.current('popup.cadastreTitle')}</strong><br/>
+              <span style="color:#555">${tRef.current('popup.section')}:</span> ${section}<br/>
+              <span style="color:#555">${tRef.current('popup.number')}:</span> ${numero}<br/>
+              <span style="color:#555">${tRef.current('popup.municipality')}:</span> ${commune}
             </div>`
           )
           .addTo(m);
       });
 
       // ── Draw events ───────────────────────────────────────────────────
-      // Fired when the user completes a polygon by double-clicking.
+      // Fired when the user completes a polygon (Finish button or double-click).
       m.on('draw.create', () => {
         const fc = draw.getAll();
         if (fc.features.length === 0) return;
         const geom = fc.features[0].geometry;
         dispatch(analyzePolygonThunk(JSON.stringify(geom)));
+
+        // Convert to immovable static layer
+        const geojsonData: GeoJSON.Feature = {
+          type: 'Feature',
+          geometry: geom,
+          properties: {},
+        };
+        draw.deleteAll();
+        draw.changeMode('simple_select');
+
+        if (m.getSource('analysis-polygon')) {
+          (m.getSource('analysis-polygon') as mapboxgl.GeoJSONSource).setData(geojsonData);
+        } else {
+          m.addSource('analysis-polygon', { type: 'geojson', data: geojsonData });
+          m.addLayer({
+            id: 'analysis-polygon-fill',
+            type: 'fill',
+            source: 'analysis-polygon',
+            paint: { 'fill-color': '#3388ff', 'fill-opacity': 0.15 },
+          });
+          m.addLayer({
+            id: 'analysis-polygon-outline',
+            type: 'line',
+            source: 'analysis-polygon',
+            paint: { 'line-color': '#3388ff', 'line-width': 2, 'line-dasharray': [2, 2] },
+          });
+        }
       });
 
       setLoaded(true);
@@ -464,20 +507,38 @@ export default function Map() {
 
       {loaded && (
         <>
-          {/* Draw / analyse button — only visible to authenticated users */}
-          {isLoggedIn && (
+          {/* Draw / analyse buttons — only visible to authenticated users */}
+          {isLoggedIn && analysisStatus === 'drawing' && (
+            <div className={styles.drawBtnGroup}>
+              <button
+                className={`${styles.drawBtn} ${styles.finishBtn}`}
+                onClick={handleFinishClick}
+                title={t('draw.titleFinish')}
+              >
+                ✓ {t('draw.finish')}
+              </button>
+              <button
+                className={`${styles.drawBtn} ${styles.drawBtnActive}`}
+                onClick={handleDrawClick}
+                title={t('draw.titleCancel')}
+              >
+                ✕ {t('draw.cancel')}
+              </button>
+            </div>
+          )}
+          {isLoggedIn && analysisStatus !== 'drawing' && (
             <button
-              className={`${styles.drawBtn}${analysisStatus === 'drawing' ? ` ${styles.drawBtnActive}` : ''}`}
+              className={styles.drawBtn}
               onClick={handleDrawClick}
-              title={analysisStatus === 'drawing' ? 'Annuler le dessin' : 'Tracer un polygone et analyser la couverture forestière'}
+              title={t('draw.titleStart')}
             >
-              {analysisStatus === 'drawing' ? '✕ Annuler' : '⬡ Analyser une zone'}
+              ⬡ {t('draw.analyse')}
             </button>
           )}
 
           {/* Zoom-tier legend */}
           <div className={styles.legend}>
-            <p className={styles.legendTitle}>{TIER_LABELS[tier]}</p>
+            <p className={styles.legendTitle}>{t(`legend.${tier}` as DictKey)}</p>
 
             {tier === 'regions' && (
               <div className={styles.legendItem}>
@@ -485,7 +546,7 @@ export default function Map() {
                   className={styles.legendSwatch}
                   style={{ background: '#4a90d9', border: '1.5px solid #1a5fa8' }}
                 />
-                <span>Région — cliquer pour zoomer</span>
+                <span>{t('popup.region')} — {t('legend.clickToZoom')}</span>
               </div>
             )}
 
@@ -495,7 +556,7 @@ export default function Map() {
                   className={styles.legendSwatch}
                   style={{ background: '#7b5ea7', border: '1.5px solid #5a3f8a' }}
                 />
-                <span>Département — cliquer pour zoomer</span>
+                <span>{t('popup.department')} — {t('legend.clickToZoom')}</span>
               </div>
             )}
 
@@ -505,19 +566,19 @@ export default function Map() {
                   className={styles.legendSwatch}
                   style={{ background: '#f0a500', border: '1.5px solid #c87800' }}
                 />
-                <span>Commune — cliquer pour zoomer</span>
+                <span>{t('popup.municipality')} — {t('legend.clickToZoom')}</span>
               </div>
             )}
 
             {(tier === 'foret' || tier === 'cadastre') && (
               <>
-                {Object.entries(TFV_LABELS).map(([code, label]) => (
+                {TFV_CODES.map((code) => (
                   <div key={code} className={styles.legendItem}>
                     <span
                       className={styles.legendSwatch}
                       style={{ background: TFV_COLORS[code] ?? DEFAULT_FOREST_COLOR }}
                     />
-                    <span>{label}</span>
+                    <span>{t(`tfv.${code}` as DictKey)}</span>
                   </div>
                 ))}
                 <div className={styles.legendItem}>
@@ -525,7 +586,7 @@ export default function Map() {
                     className={styles.legendSwatch}
                     style={{ background: DEFAULT_FOREST_COLOR }}
                   />
-                  <span>Autre forêt</span>
+                  <span>{t('legend.otherForest')}</span>
                 </div>
               </>
             )}
@@ -539,7 +600,7 @@ export default function Map() {
                   className={styles.legendSwatch}
                   style={{ background: '#e8c97a', border: '1.5px solid #b8860b' }}
                 />
-                <span>Parcelle cadastrale</span>
+                <span>{t('legend.cadastreParcel')}</span>
               </div>
             )}
           </div>

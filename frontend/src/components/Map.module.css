@@ -121,3 +121,29 @@
   background: #a93226;
   border-color: #a93226;
 }
+
+/* ── Button group (Finish + Cancel during drawing) ── */
+.drawBtnGroup {
+  position: absolute;
+  top: 12px;
+  left: 320px;
+  z-index: 6;
+  display: flex;
+  gap: 6px;
+}
+
+.drawBtnGroup .drawBtn {
+  position: static;
+}
+
+.finishBtn {
+  background: #2d6a4f;
+  color: #fff;
+  border-color: #2d6a4f;
+}
+
+.finishBtn:hover {
+  background: #1b4332;
+  border-color: #1b4332;
+  color: #fff;
+}
