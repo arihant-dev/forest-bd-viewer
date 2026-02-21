@@ -13,8 +13,10 @@ import (
 	"forest-bd-viewer/internal/cache"
 	"forest-bd-viewer/internal/config"
 	"forest-bd-viewer/internal/database"
+	"forest-bd-viewer/internal/geo"
 	"forest-bd-viewer/internal/graph"
 	"forest-bd-viewer/internal/graph/generated"
+	"forest-bd-viewer/internal/tiles"
 )
 
 func main() {
@@ -73,6 +75,13 @@ func main() {
 	}))
 	e.POST("/graphql", echo.WrapHandler(graphqlHandler))
 	e.GET("/graphql", echo.WrapHandler(graphqlHandler))
+
+	// MVT tile endpoints
+	geoQueries := &geo.Queries{DB: pool}
+	tileHandler := tiles.NewHandler(geoQueries, redisClient)
+	e.GET("/tiles/foret/:z/:x/:y", tileHandler.ForestTile)
+	e.GET("/tiles/admin/:layer/:z/:x/:y", tileHandler.AdminTile)
+	e.GET("/tiles/cadastre/:z/:x/:y", tileHandler.CadastreTile)
 
 	// Start server
 	addr := fmt.Sprintf(":%s", cfg.BackendPort)

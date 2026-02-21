@@ -6,10 +6,58 @@ type AuthPayload struct {
 	User *User `json:"user"`
 }
 
+type Commune struct {
+	ID              string  `json:"id"`
+	Code            string  `json:"code"`
+	Nom             string  `json:"nom"`
+	DepartementCode *string `json:"departementCode,omitempty"`
+}
+
+type Departement struct {
+	ID         string  `json:"id"`
+	Code       string  `json:"code"`
+	Nom        string  `json:"nom"`
+	RegionCode *string `json:"regionCode,omitempty"`
+}
+
+type MapState struct {
+	Lng  float64 `json:"lng"`
+	Lat  float64 `json:"lat"`
+	Zoom float64 `json:"zoom"`
+}
+
 type Mutation struct {
 }
 
+type PolygonAnalysis struct {
+	AreaHa           float64             `json:"areaHa"`
+	ForestCoverHa    float64             `json:"forestCoverHa"`
+	ForestCoverPct   float64             `json:"forestCoverPct"`
+	ParcelCount      int                 `json:"parcelCount"`
+	TfvBreakdown     []*TfvBreakdown     `json:"tfvBreakdown"`
+	SpeciesBreakdown []*SpeciesBreakdown `json:"speciesBreakdown"`
+}
+
 type Query struct {
+}
+
+type Region struct {
+	ID   string `json:"id"`
+	Code string `json:"code"`
+	Nom  string `json:"nom"`
+}
+
+type SpeciesBreakdown struct {
+	Essence string  `json:"essence"`
+	AreaHa  float64 `json:"areaHa"`
+	Pct     float64 `json:"pct"`
+}
+
+type TfvBreakdown struct {
+	CodeTfv string  `json:"codeTfv"`
+	LibTfv  string  `json:"libTfv"`
+	AreaHa  float64 `json:"areaHa"`
+	Pct     float64 `json:"pct"`
 }
 
 type User struct {

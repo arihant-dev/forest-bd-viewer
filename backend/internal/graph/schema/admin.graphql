@@ -1,0 +1,25 @@
+extend type Query {
+  regions: [Region!]!
+  departements(regionCode: String): [Departement!]!
+  communes(departementCode: String): [Commune!]!
+}
+
+type Region {
+  id: ID!
+  code: String!
+  nom: String!
+}
+
+type Departement {
+  id: ID!
+  code: String!
+  nom: String!
+  regionCode: String
+}
+
+type Commune {
+  id: ID!
+  code: String!
+  nom: String!
+  departementCode: String
+}

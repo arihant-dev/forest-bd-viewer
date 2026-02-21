@@ -1,0 +1,25 @@
+extend type Mutation {
+  analyzePolygon(geojson: String!): PolygonAnalysis!
+}
+
+type PolygonAnalysis {
+  areaHa:        Float!
+  forestCoverHa: Float!
+  forestCoverPct: Float!
+  parcelCount:   Int!
+  tfvBreakdown:  [TfvBreakdown!]!
+  speciesBreakdown: [SpeciesBreakdown!]!
+}
+
+type TfvBreakdown {
+  codeTfv: String!
+  libTfv:  String!
+  areaHa:  Float!
+  pct:     Float!
+}
+
+type SpeciesBreakdown {
+  essence: String!
+  areaHa:  Float!
+  pct:     Float!
+}
