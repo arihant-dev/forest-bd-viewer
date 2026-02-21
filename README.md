@@ -36,16 +36,42 @@ Authenticated users can:
 
 ### Data Flow
 
-```
-Browser
-  |
-  |-- GraphQL (mutations/queries) --> Go Backend --> PostGIS
-  |-- MVT Tile requests -------------> Go Backend --> PostGIS --> Redis cache
-  |
-  Frontend (Next.js)                   Backend (Echo + gqlgen)
-  - Mapbox GL JS rendering             - JWT auth middleware
-  - Redux state management              - ST_AsMVT tile generation
-  - i18n (EN/FR)                        - Polygon spatial analysis
+```mermaid
+graph LR
+    User([User / Browser])
+
+    subgraph Frontend["Frontend — Next.js 16"]
+        Map[Mapbox GL JS<br/>Zoom-based layers]
+        Draw[mapbox-gl-draw<br/>Polygon tool]
+        Redux[Redux Toolkit<br/>auth · map · analysis]
+        I18n[i18n Context<br/>EN / FR]
+    end
+
+    subgraph Backend["Backend — Go / Echo"]
+        Auth[JWT Auth<br/>Middleware]
+        GQL[gqlgen<br/>GraphQL]
+        Tiles[MVT Tile<br/>Handler]
+        Analysis[Polygon<br/>Analysis]
+    end
+
+    subgraph Data["Data Layer"]
+        DB[(PostGIS<br/>PostgreSQL 16)]
+        Cache[(Redis 7<br/>Tile Cache)]
+    end
+
+    User -->|Browser| Frontend
+    Map   -->|MVT tile requests| Tiles
+    Draw  -->|analyzePolygon mutation| GQL
+    Redux -->|GraphQL queries/mutations| GQL
+
+    GQL   -->|auth, map state,<br/>admin queries| DB
+    GQL   -->|analyzePolygon| Analysis
+    Analysis -->|ST_Intersection,<br/>TFV normalization| DB
+    Tiles -->|ST_AsMVT| DB
+    Tiles -->|read / write| Cache
+
+    Auth -.->|protects| GQL
+    Auth -.->|protects| Tiles
 ```
 
 ### Services
