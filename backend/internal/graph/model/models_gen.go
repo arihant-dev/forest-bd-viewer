@@ -20,6 +20,17 @@ type Departement struct {
 	RegionCode *string `json:"regionCode,omitempty"`
 }
 
+type LidarAnalysis struct {
+	HasCoverage  bool      `json:"hasCoverage"`
+	Message      *string   `json:"message,omitempty"`
+	MinHeight    *float64  `json:"minHeight,omitempty"`
+	MaxHeight    *float64  `json:"maxHeight,omitempty"`
+	MeanHeight   *float64  `json:"meanHeight,omitempty"`
+	MedianHeight *float64  `json:"medianHeight,omitempty"`
+	ChmImageURL  *string   `json:"chmImageUrl,omitempty"`
+	Bounds       []float64 `json:"bounds,omitempty"`
+}
+
 type MapState struct {
 	Lng  float64 `json:"lng"`
 	Lat  float64 `json:"lat"`

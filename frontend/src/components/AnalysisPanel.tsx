@@ -31,7 +31,7 @@ interface Props {
 
 export default function AnalysisPanel({ onClear }: Props) {
     const dispatch = useAppDispatch();
-    const { status, result, error } = useAppSelector((s) => s.analysis);
+    const { status, result, error, lidarStatus, lidarResult, lidarError } = useAppSelector((s) => s.analysis);
     const { t } = useI18n();
 
     if (status === 'idle') return null;
@@ -147,6 +147,58 @@ export default function AnalysisPanel({ onClear }: Props) {
                     {result.parcelCount === 0 && (
                         <p className={styles.hint}>{t('analysis.noParcels')}</p>
                     )}
+
+                    {/* ── LiDAR CHM section ── */}
+                    <section className={styles.section}>
+                        <h4 className={styles.sectionTitle}>{t('lidar.section')}</h4>
+
+                        {lidarStatus === 'loading' && (
+                            <div className={styles.loadingRow}>
+                                <span className={styles.spinnerSmall} />
+                                <span>{t('lidar.loading')}</span>
+                            </div>
+                        )}
+
+                        {lidarStatus === 'error' && (
+                            <p className={styles.error}>{lidarError ?? t('lidar.error')}</p>
+                        )}
+
+                        {lidarStatus === 'done' && lidarResult && !lidarResult.hasCoverage && (
+                            <p className={styles.hint}>
+                                {lidarResult.message ?? t('lidar.noCoverage')}
+                            </p>
+                        )}
+
+                        {lidarStatus === 'done' && lidarResult && lidarResult.hasCoverage && (
+                            <div className={styles.lidarStats}>
+                                <div className={styles.lidarRow}>
+                                    <span className={styles.lidarLabel}>{t('lidar.minHeight')}</span>
+                                    <span className={styles.lidarValue}>{fmt(lidarResult.minHeight ?? 0)} m</span>
+                                </div>
+                                <div className={styles.lidarRow}>
+                                    <span className={styles.lidarLabel}>{t('lidar.maxHeight')}</span>
+                                    <span className={styles.lidarValue}>{fmt(lidarResult.maxHeight ?? 0)} m</span>
+                                </div>
+                                <div className={styles.lidarRow}>
+                                    <span className={styles.lidarLabel}>{t('lidar.meanHeight')}</span>
+                                    <span className={styles.lidarValue}>{fmt(lidarResult.meanHeight ?? 0)} m</span>
+                                </div>
+                                <div className={styles.lidarRow}>
+                                    <span className={styles.lidarLabel}>{t('lidar.medianHeight')}</span>
+                                    <span className={styles.lidarValue}>{fmt(lidarResult.medianHeight ?? 0)} m</span>
+                                </div>
+                                {lidarResult.chmImageUrl && (
+                                    <div className={styles.lidarOverlayNote}>
+                                        {t('lidar.overlay')}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {lidarStatus === 'idle' && (
+                            <p className={styles.hint}>{t('lidar.noCoverage')}</p>
+                        )}
+                    </section>
                 </>
             )}
         </div>

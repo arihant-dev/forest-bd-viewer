@@ -15,6 +15,7 @@ Authenticated users can:
 - **Drill down** through administrative layers: Region > Department > Commune
 - **Inspect** BD Foret V2 vegetation types and Cadastre parcels at high zoom levels
 - **Analyze** custom areas by drawing polygons — get forest cover stats, TFV breakdown, and species composition
+- **LiDAR CHM analysis** — compute Canopy Height Model from IGN LIDAR HD data with map overlay (where coverage exists)
 - **Switch language** between English (default) and French
 
 ---
@@ -52,11 +53,13 @@ graph LR
         GQL[gqlgen<br/>GraphQL]
         Tiles[MVT Tile<br/>Handler]
         Analysis[Polygon<br/>Analysis]
+        LiDAR[LiDAR CHM<br/>Analysis]
     end
 
     subgraph Data["Data Layer"]
         DB[(PostGIS<br/>PostgreSQL 16)]
         Cache[(Redis 7<br/>Tile Cache)]
+        IGN[IGN LIDAR HD<br/>WFS / WMS]
     end
 
     User -->|Browser| Frontend
@@ -66,7 +69,9 @@ graph LR
 
     GQL   -->|auth, map state,<br/>admin queries| DB
     GQL   -->|analyzePolygon| Analysis
+    GQL   -->|analyzeLidar| LiDAR
     Analysis -->|ST_Intersection,<br/>TFV normalization| DB
+    LiDAR -->|WFS tile query,<br/>WMS download| IGN
     Tiles -->|ST_AsMVT| DB
     Tiles -->|read / write| Cache
 
@@ -189,6 +194,16 @@ Click **"Analyse area"**, then click on the map to place vertices. Press **"Fini
 
 The polygon is immovable after creation — close the panel or draw a new polygon to clear it.
 
+### LiDAR CHM Analysis (Bonus B)
+
+When a polygon is drawn, the backend also queries IGN's LIDAR HD tile index for MNS (Digital Surface Model) and MNT (Digital Terrain Model) data. If coverage exists:
+
+- Computes **CHM = MNS - MNT** (Canopy Height Model) per pixel
+- Returns **min/max/mean/median canopy height** statistics in the analysis panel
+- Overlays a **color-coded CHM heatmap** (green -> yellow -> red) on the map
+
+**Note**: LIDAR HD coverage is progressive across France. Ile-de-France currently has no coverage, so the panel shows "No LiDAR HD coverage" for this area. The feature works for polygons in covered regions (see [LIDAR HD coverage](https://diffusion-lidarhd.ign.fr/)).
+
 ### Internationalization
 
 The UI defaults to English. Click the language toggle (top of sidebar) to switch to French. All UI labels, legend items, popups, and analysis results are translated.
@@ -226,7 +241,9 @@ forest_bd_viewer/
 │   │   │   ├── forest.go           # MVT forest tiles
 │   │   │   ├── admin.go            # MVT admin boundary tiles
 │   │   │   ├── cadastre.go         # MVT cadastre tiles
-│   │   │   └── analysis.go         # Polygon analysis (TFV normalization)
+│   │   │   ├── analysis.go         # Polygon analysis (TFV normalization)
+│   │   │   ├── lidar.go            # LiDAR CHM: WFS query, download, computation
+│   │   │   └── geotiff.go          # Pure Go float32 GeoTIFF reader
 │   │   ├── graph/                  # gqlgen resolvers + schema
 │   │   │   ├── schema/             # .graphql source files
 │   │   │   ├── generated/          # Auto-generated (do not edit)
@@ -290,6 +307,7 @@ Copy `.env.example` to `.env`. All values are consumed by Docker Compose.
 | GET | `/tiles/foret/{z}/{x}/{y}.mvt` | Yes | Forest MVT tiles (24h cache) |
 | GET | `/tiles/admin/{layer}/{z}/{x}/{y}.mvt` | No | Admin boundary tiles (7d cache) |
 | GET | `/tiles/cadastre/{z}/{x}/{y}.mvt` | Yes | Cadastre parcel tiles (24h cache) |
+| GET | `/lidar/chm/{id}.png` | No | Generated CHM overlay images |
 
 ### GraphQL Schema
 
@@ -308,6 +326,7 @@ type Mutation {
   logout: Boolean!
   saveMapState(lng: Float!, lat: Float!, zoom: Float!): Boolean!
   analyzePolygon(geojson: String!): PolygonAnalysis!
+  analyzeLidar(geojson: String!): LidarAnalysis!
 }
 
 type PolygonAnalysis {
@@ -317,6 +336,17 @@ type PolygonAnalysis {
   parcelCount: Int!
   tfvBreakdown: [TfvBreakdown!]!
   speciesBreakdown: [SpeciesBreakdown!]!
+}
+
+type LidarAnalysis {
+  hasCoverage: Boolean!
+  message: String
+  minHeight: Float
+  maxHeight: Float
+  meanHeight: Float
+  medianHeight: Float
+  chmImageUrl: String
+  bounds: [Float!]
 }
 ```
 
@@ -364,6 +394,7 @@ npx tsc --noEmit        # Type check
 | Dataset | Source | License | Format |
 |---------|--------|---------|--------|
 | BD Foret V2 | [IGN](https://geoservices.ign.fr/bdforet) | Licence Ouverte 2.0 | SHP |
+| LIDAR HD | [IGN](https://diffusion-lidarhd.ign.fr/) | Licence Ouverte 2.0 | GeoTIFF (MNS/MNT) |
 | Cadastre | [Etalab](https://cadastre.data.gouv.fr) | Licence Ouverte 2.0 | GeoJSON |
 | Admin Boundaries | [france-geojson](https://github.com/gregoiredavid/france-geojson) / [geo.api.gouv.fr](https://geo.api.gouv.fr) | Open Data | GeoJSON |
 

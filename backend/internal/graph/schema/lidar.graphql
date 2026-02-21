@@ -1,0 +1,14 @@
+extend type Mutation {
+  analyzeLidar(geojson: String!): LidarAnalysis!
+}
+
+type LidarAnalysis {
+  hasCoverage: Boolean!
+  message:     String
+  minHeight:   Float
+  maxHeight:   Float
+  meanHeight:  Float
+  medianHeight: Float
+  chmImageUrl: String
+  bounds:      [Float!]
+}

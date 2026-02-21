@@ -8,7 +8,7 @@ import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import styles from './Map.module.css';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setMapState, saveMapStateThunk } from '@/store/mapSlice';
-import { startDrawing, clearAnalysis, analyzePolygonThunk } from '@/store/analysisSlice';
+import { startDrawing, clearAnalysis, analyzePolygonThunk, analyzeLidarThunk } from '@/store/analysisSlice';
 import { useI18n, type DictKey } from '@/lib/i18n';
 import AnalysisPanel from './AnalysisPanel';
 
@@ -91,6 +91,7 @@ export default function Map() {
   const { center, zoom: savedZoom, hydrated } = useAppSelector((s) => s.map);
   const isLoggedIn = useAppSelector((s) => s.auth.user !== null);
   const analysisStatus = useAppSelector((s) => s.analysis.status);
+  const lidarResult = useAppSelector((s) => s.analysis.lidarResult);
   const { t } = useI18n();
 
   // Refs so map event handlers (set up once) always see the latest values
@@ -107,6 +108,9 @@ export default function Map() {
     if (m.getLayer('analysis-polygon-fill')) m.removeLayer('analysis-polygon-fill');
     if (m.getLayer('analysis-polygon-outline')) m.removeLayer('analysis-polygon-outline');
     if (m.getSource('analysis-polygon')) m.removeSource('analysis-polygon');
+    // Also remove CHM overlay
+    if (m.getLayer('chm-overlay-layer')) m.removeLayer('chm-overlay-layer');
+    if (m.getSource('chm-overlay')) m.removeSource('chm-overlay');
   }, []);
 
   // ── Draw control handlers ─────────────────────────────────────────────────
@@ -163,7 +167,7 @@ export default function Map() {
       zoom: savedZoom,
       attributionControl: true,
       transformRequest: (url, resourceType) => {
-        if (resourceType === 'Tile' && url.startsWith(apiUrl)) {
+        if ((resourceType === 'Tile' || resourceType === 'Image') && url.startsWith(apiUrl)) {
           return { url, credentials: 'include' };
         }
         return { url };
@@ -448,6 +452,7 @@ export default function Map() {
         if (fc.features.length === 0) return;
         const geom = fc.features[0].geometry;
         dispatch(analyzePolygonThunk(JSON.stringify(geom)));
+        dispatch(analyzeLidarThunk(JSON.stringify(geom)));
 
         // Convert to immovable static layer
         const geojsonData: GeoJSON.Feature = {
@@ -488,6 +493,62 @@ export default function Map() {
       drawRef.current = null;
     };
   }, [hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── CHM overlay management ──────────────────────────────────────────────
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !m.isStyleLoaded()) return;
+
+    const sourceId = 'chm-overlay';
+    const layerId = 'chm-overlay-layer';
+
+    if (lidarResult?.hasCoverage && lidarResult.chmImageUrl && lidarResult.bounds?.length === 4) {
+      const [west, south, east, north] = lidarResult.bounds;
+
+      // Validate bounds are reasonable WGS84 coordinates
+      if (
+        Math.abs(west) > 180 || Math.abs(east) > 180 ||
+        Math.abs(south) > 90 || Math.abs(north) > 90
+      ) {
+        console.warn('CHM overlay: invalid bounds (not WGS84), skipping overlay', lidarResult.bounds);
+        return;
+      }
+
+      const coordinates: [[number, number], [number, number], [number, number], [number, number]] = [
+        [west, north],  // top-left
+        [east, north],  // top-right
+        [east, south],  // bottom-right
+        [west, south],  // bottom-left
+      ];
+
+      try {
+        if (m.getSource(sourceId)) {
+          (m.getSource(sourceId) as mapboxgl.ImageSource).updateImage({
+            url: lidarResult.chmImageUrl,
+            coordinates,
+          });
+        } else {
+          m.addSource(sourceId, {
+            type: 'image',
+            url: lidarResult.chmImageUrl,
+            coordinates,
+          });
+          m.addLayer({
+            id: layerId,
+            type: 'raster',
+            source: sourceId,
+            paint: { 'raster-opacity': 0.6 },
+          });
+        }
+      } catch (err) {
+        console.error('CHM overlay: failed to add source/layer', err);
+      }
+    } else {
+      // Remove overlay when no coverage or cleared
+      if (m.getLayer(layerId)) m.removeLayer(layerId);
+      if (m.getSource(sourceId)) m.removeSource(sourceId);
+    }
+  }, [lidarResult]);
 
   const tier = zoomTier(currentZoom);
 

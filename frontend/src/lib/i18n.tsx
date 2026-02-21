@@ -65,6 +65,17 @@ const dict = {
   // Language toggle
   'lang.toggle':             { en: 'FR',                                        fr: 'EN' },
   'lang.toggleTitle':        { en: 'Switch to French',                          fr: 'Switch to English' },
+
+  // LiDAR CHM analysis
+  'lidar.section':           { en: 'Canopy Height Model (LiDAR)',              fr: 'Modèle de Hauteur de Canopée (LiDAR)' },
+  'lidar.loading':           { en: 'Analysing LiDAR data...',                  fr: 'Analyse des données LiDAR...' },
+  'lidar.noCoverage':        { en: 'No LiDAR HD coverage',                    fr: 'Pas de couverture LiDAR HD' },
+  'lidar.minHeight':         { en: 'Min height',                               fr: 'Hauteur min' },
+  'lidar.maxHeight':         { en: 'Max height',                               fr: 'Hauteur max' },
+  'lidar.meanHeight':        { en: 'Mean height',                              fr: 'Hauteur moyenne' },
+  'lidar.medianHeight':      { en: 'Median height',                            fr: 'Hauteur médiane' },
+  'lidar.error':             { en: 'LiDAR analysis failed.',                   fr: 'Analyse LiDAR échouée.' },
+  'lidar.overlay':           { en: 'CHM overlay shown on map',                   fr: 'Couche MHC affichée sur la carte' },
 } as const;
 
 export type DictKey = keyof typeof dict;

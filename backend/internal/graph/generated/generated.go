@@ -64,6 +64,17 @@ type ComplexityRoot struct {
 		RegionCode func(childComplexity int) int
 	}
 
+	LidarAnalysis struct {
+		Bounds       func(childComplexity int) int
+		ChmImageURL  func(childComplexity int) int
+		HasCoverage  func(childComplexity int) int
+		MaxHeight    func(childComplexity int) int
+		MeanHeight   func(childComplexity int) int
+		MedianHeight func(childComplexity int) int
+		Message      func(childComplexity int) int
+		MinHeight    func(childComplexity int) int
+	}
+
 	MapState struct {
 		Lat  func(childComplexity int) int
 		Lng  func(childComplexity int) int
@@ -71,6 +82,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
+		AnalyzeLidar   func(childComplexity int, geojson string) int
 		AnalyzePolygon func(childComplexity int, geojson string) int
 		Login          func(childComplexity int, email string, password string) int
 		Logout         func(childComplexity int) int
@@ -127,6 +139,7 @@ type MutationResolver interface {
 	Login(ctx context.Context, email string, password string) (*model.AuthPayload, error)
 	Logout(ctx context.Context) (bool, error)
 	AnalyzePolygon(ctx context.Context, geojson string) (*model.PolygonAnalysis, error)
+	AnalyzeLidar(ctx context.Context, geojson string) (*model.LidarAnalysis, error)
 	SaveMapState(ctx context.Context, lng float64, lat float64, zoom float64) (bool, error)
 }
 type QueryResolver interface {
@@ -213,6 +226,55 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Departement.RegionCode(childComplexity), true
 
+	case "LidarAnalysis.bounds":
+		if e.complexity.LidarAnalysis.Bounds == nil {
+			break
+		}
+
+		return e.complexity.LidarAnalysis.Bounds(childComplexity), true
+	case "LidarAnalysis.chmImageUrl":
+		if e.complexity.LidarAnalysis.ChmImageURL == nil {
+			break
+		}
+
+		return e.complexity.LidarAnalysis.ChmImageURL(childComplexity), true
+	case "LidarAnalysis.hasCoverage":
+		if e.complexity.LidarAnalysis.HasCoverage == nil {
+			break
+		}
+
+		return e.complexity.LidarAnalysis.HasCoverage(childComplexity), true
+	case "LidarAnalysis.maxHeight":
+		if e.complexity.LidarAnalysis.MaxHeight == nil {
+			break
+		}
+
+		return e.complexity.LidarAnalysis.MaxHeight(childComplexity), true
+	case "LidarAnalysis.meanHeight":
+		if e.complexity.LidarAnalysis.MeanHeight == nil {
+			break
+		}
+
+		return e.complexity.LidarAnalysis.MeanHeight(childComplexity), true
+	case "LidarAnalysis.medianHeight":
+		if e.complexity.LidarAnalysis.MedianHeight == nil {
+			break
+		}
+
+		return e.complexity.LidarAnalysis.MedianHeight(childComplexity), true
+	case "LidarAnalysis.message":
+		if e.complexity.LidarAnalysis.Message == nil {
+			break
+		}
+
+		return e.complexity.LidarAnalysis.Message(childComplexity), true
+	case "LidarAnalysis.minHeight":
+		if e.complexity.LidarAnalysis.MinHeight == nil {
+			break
+		}
+
+		return e.complexity.LidarAnalysis.MinHeight(childComplexity), true
+
 	case "MapState.lat":
 		if e.complexity.MapState.Lat == nil {
 			break
@@ -232,6 +294,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.MapState.Zoom(childComplexity), true
 
+	case "Mutation.analyzeLidar":
+		if e.complexity.Mutation.AnalyzeLidar == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_analyzeLidar_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AnalyzeLidar(childComplexity, args["geojson"].(string)), true
 	case "Mutation.analyzePolygon":
 		if e.complexity.Mutation.AnalyzePolygon == nil {
 			break
@@ -626,6 +699,21 @@ type User {
   createdAt: String!
 }
 `, BuiltIn: false},
+	{Name: "../schema/lidar.graphql", Input: `extend type Mutation {
+  analyzeLidar(geojson: String!): LidarAnalysis!
+}
+
+type LidarAnalysis {
+  hasCoverage: Boolean!
+  message:     String
+  minHeight:   Float
+  maxHeight:   Float
+  meanHeight:  Float
+  medianHeight: Float
+  chmImageUrl: String
+  bounds:      [Float!]
+}
+`, BuiltIn: false},
 	{Name: "../schema/map.graphql", Input: `extend type Query {
   myMapState: MapState
 }
@@ -646,6 +734,17 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_analyzeLidar_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "geojson", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["geojson"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_analyzePolygon_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
@@ -1072,6 +1171,238 @@ func (ec *executionContext) fieldContext_Departement_regionCode(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _LidarAnalysis_hasCoverage(ctx context.Context, field graphql.CollectedField, obj *model.LidarAnalysis) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LidarAnalysis_hasCoverage,
+		func(ctx context.Context) (any, error) {
+			return obj.HasCoverage, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_LidarAnalysis_hasCoverage(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LidarAnalysis",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LidarAnalysis_message(ctx context.Context, field graphql.CollectedField, obj *model.LidarAnalysis) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LidarAnalysis_message,
+		func(ctx context.Context) (any, error) {
+			return obj.Message, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LidarAnalysis_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LidarAnalysis",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LidarAnalysis_minHeight(ctx context.Context, field graphql.CollectedField, obj *model.LidarAnalysis) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LidarAnalysis_minHeight,
+		func(ctx context.Context) (any, error) {
+			return obj.MinHeight, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LidarAnalysis_minHeight(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LidarAnalysis",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LidarAnalysis_maxHeight(ctx context.Context, field graphql.CollectedField, obj *model.LidarAnalysis) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LidarAnalysis_maxHeight,
+		func(ctx context.Context) (any, error) {
+			return obj.MaxHeight, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LidarAnalysis_maxHeight(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LidarAnalysis",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LidarAnalysis_meanHeight(ctx context.Context, field graphql.CollectedField, obj *model.LidarAnalysis) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LidarAnalysis_meanHeight,
+		func(ctx context.Context) (any, error) {
+			return obj.MeanHeight, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LidarAnalysis_meanHeight(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LidarAnalysis",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LidarAnalysis_medianHeight(ctx context.Context, field graphql.CollectedField, obj *model.LidarAnalysis) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LidarAnalysis_medianHeight,
+		func(ctx context.Context) (any, error) {
+			return obj.MedianHeight, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LidarAnalysis_medianHeight(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LidarAnalysis",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LidarAnalysis_chmImageUrl(ctx context.Context, field graphql.CollectedField, obj *model.LidarAnalysis) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LidarAnalysis_chmImageUrl,
+		func(ctx context.Context) (any, error) {
+			return obj.ChmImageURL, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LidarAnalysis_chmImageUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LidarAnalysis",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LidarAnalysis_bounds(ctx context.Context, field graphql.CollectedField, obj *model.LidarAnalysis) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LidarAnalysis_bounds,
+		func(ctx context.Context) (any, error) {
+			return obj.Bounds, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚕfloat64ᚄ,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_LidarAnalysis_bounds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LidarAnalysis",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _MapState_lng(ctx context.Context, field graphql.CollectedField, obj *model.MapState) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1327,6 +1658,65 @@ func (ec *executionContext) fieldContext_Mutation_analyzePolygon(ctx context.Con
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_analyzePolygon_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_analyzeLidar(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_analyzeLidar,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().AnalyzeLidar(ctx, fc.Args["geojson"].(string))
+		},
+		nil,
+		ec.marshalNLidarAnalysis2ᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐLidarAnalysis,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_analyzeLidar(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hasCoverage":
+				return ec.fieldContext_LidarAnalysis_hasCoverage(ctx, field)
+			case "message":
+				return ec.fieldContext_LidarAnalysis_message(ctx, field)
+			case "minHeight":
+				return ec.fieldContext_LidarAnalysis_minHeight(ctx, field)
+			case "maxHeight":
+				return ec.fieldContext_LidarAnalysis_maxHeight(ctx, field)
+			case "meanHeight":
+				return ec.fieldContext_LidarAnalysis_meanHeight(ctx, field)
+			case "medianHeight":
+				return ec.fieldContext_LidarAnalysis_medianHeight(ctx, field)
+			case "chmImageUrl":
+				return ec.fieldContext_LidarAnalysis_chmImageUrl(ctx, field)
+			case "bounds":
+				return ec.fieldContext_LidarAnalysis_bounds(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LidarAnalysis", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_analyzeLidar_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -3890,6 +4280,59 @@ func (ec *executionContext) _Departement(ctx context.Context, sel ast.SelectionS
 	return out
 }
 
+var lidarAnalysisImplementors = []string{"LidarAnalysis"}
+
+func (ec *executionContext) _LidarAnalysis(ctx context.Context, sel ast.SelectionSet, obj *model.LidarAnalysis) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, lidarAnalysisImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("LidarAnalysis")
+		case "hasCoverage":
+			out.Values[i] = ec._LidarAnalysis_hasCoverage(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "message":
+			out.Values[i] = ec._LidarAnalysis_message(ctx, field, obj)
+		case "minHeight":
+			out.Values[i] = ec._LidarAnalysis_minHeight(ctx, field, obj)
+		case "maxHeight":
+			out.Values[i] = ec._LidarAnalysis_maxHeight(ctx, field, obj)
+		case "meanHeight":
+			out.Values[i] = ec._LidarAnalysis_meanHeight(ctx, field, obj)
+		case "medianHeight":
+			out.Values[i] = ec._LidarAnalysis_medianHeight(ctx, field, obj)
+		case "chmImageUrl":
+			out.Values[i] = ec._LidarAnalysis_chmImageUrl(ctx, field, obj)
+		case "bounds":
+			out.Values[i] = ec._LidarAnalysis_bounds(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var mapStateImplementors = []string{"MapState"}
 
 func (ec *executionContext) _MapState(ctx context.Context, sel ast.SelectionSet, obj *model.MapState) graphql.Marshaler {
@@ -3982,6 +4425,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "analyzePolygon":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_analyzePolygon(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "analyzeLidar":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_analyzeLidar(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -4961,6 +5411,20 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
+func (ec *executionContext) marshalNLidarAnalysis2forestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐLidarAnalysis(ctx context.Context, sel ast.SelectionSet, v model.LidarAnalysis) graphql.Marshaler {
+	return ec._LidarAnalysis(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNLidarAnalysis2ᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐLidarAnalysis(ctx context.Context, sel ast.SelectionSet, v *model.LidarAnalysis) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._LidarAnalysis(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNPolygonAnalysis2forestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐPolygonAnalysis(ctx context.Context, sel ast.SelectionSet, v model.PolygonAnalysis) graphql.Marshaler {
 	return ec._PolygonAnalysis(ctx, sel, &v)
 }
@@ -5444,6 +5908,59 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	_ = ctx
 	res := graphql.MarshalBoolean(*v)
 	return res
+}
+
+func (ec *executionContext) unmarshalOFloat2ᚕfloat64ᚄ(ctx context.Context, v any) ([]float64, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]float64, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNFloat2float64(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOFloat2ᚕfloat64ᚄ(ctx context.Context, sel ast.SelectionSet, v []float64) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNFloat2float64(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v any) (*float64, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalFloatContext(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel ast.SelectionSet, v *float64) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	res := graphql.MarshalFloatContext(*v)
+	return graphql.WrapContextMarshaler(ctx, res)
 }
 
 func (ec *executionContext) marshalOMapState2ᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐMapState(ctx context.Context, sel ast.SelectionSet, v *model.MapState) graphql.Marshaler {

@@ -8,7 +8,6 @@ package graph
 import (
 	"context"
 	"fmt"
-
 	"forest-bd-viewer/internal/auth"
 	"forest-bd-viewer/internal/geo"
 	"forest-bd-viewer/internal/graph/model"

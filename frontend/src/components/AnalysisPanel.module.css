@@ -197,3 +197,36 @@
   color: #555;
   font-variant-numeric: tabular-nums;
 }
+
+/* ── LiDAR CHM stats ── */
+.lidarStats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lidarRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 0;
+}
+
+.lidarLabel {
+  font-size: 0.75rem;
+  color: #555;
+}
+
+.lidarValue {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1b4332;
+  font-variant-numeric: tabular-nums;
+}
+
+.lidarOverlayNote {
+  margin-top: 6px;
+  font-size: 0.72rem;
+  color: #2d6a4f;
+  font-style: italic;
+}

@@ -58,3 +58,20 @@
 - [x] README with full setup guide, data pipeline, API reference, troubleshooting
 - [x] agents.md updated with i18n, TFV normalization, polygon UX docs
 - [ ] Polish UI, dark theme, animations
+
+## Stage 7 — Bonus B: LiDAR CHM Analysis
+
+- [x] Research IGN LIDAR HD data sources (WFS tile index, MNS/MNT tile formats, coverage gaps)
+- [x] Create `feature/lidar-chm` branch
+- [x] GraphQL schema: `analyzeLidar` mutation + `LidarAnalysis` type (`lidar.graphql`)
+- [x] Pure Go GeoTIFF float32 reader (`internal/geo/geotiff.go`)
+- [x] LiDAR processing pipeline: WFS query, tile download/cache, CHM computation, PNG generation (`internal/geo/lidar.go`)
+- [x] GraphQL resolver (`lidar.resolvers.go`) + CHM image HTTP endpoint (`/lidar/chm/:id`)
+- [x] gqlgen code generation
+- [x] Frontend Redux: lidar state in `analysisSlice.ts` + `analyzeLidarThunk`
+- [x] Frontend i18n: 10 LiDAR translation keys (EN/FR)
+- [x] Frontend `AnalysisPanel.tsx`: LiDAR CHM section (stats, loading, error, no-coverage)
+- [x] Frontend CSS: LiDAR stats styles in `AnalysisPanel.module.css`
+- [x] Frontend `Map.tsx`: dispatch `analyzeLidarThunk` + Mapbox ImageSource CHM overlay
+- [x] Backend + frontend build verification
+- [x] Documentation updated (agents.md, tasks.md, README.md)
