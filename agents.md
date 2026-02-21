@@ -30,10 +30,11 @@ See `tasks.md` for the full task checklist.
 | Layer | Technology |
 |---|---|
 | Backend | Go 1.24+, Echo v4, gqlgen, pgx/v5, golang-migrate |
-| Frontend | Next.js 14, React 19, TypeScript 5, Redux Toolkit, Mapbox GL JS |
+| Frontend | Next.js 16, React 19, TypeScript 5, Redux Toolkit, Mapbox GL JS 3.x, mapbox-gl-draw |
 | Database | PostgreSQL 16 + PostGIS 3.4 |
 | Cache | Redis 7 |
 | Auth | JWT (HS256) via httpOnly cookie `auth_token` |
+| i18n | React Context-based EN/FR dictionary (`src/lib/i18n.tsx`) |
 | Infrastructure | Docker Compose |
 
 ---
@@ -82,6 +83,7 @@ forest_bd_viewer/
 │   │   │   ├── AnalysisPanel.tsx   # Polygon analysis results (TFV + species breakdown)
 │   │   │   └── AnalysisPanel.module.css
 │   │   ├── lib/graphql.ts          # graphql-request client (sends credentials)
+│   │   ├── lib/i18n.tsx            # EN/FR dictionary, I18nProvider, useI18n hook
 │   │   └── store/
 │   │       ├── index.ts            # Redux store (auth + map + analysis reducers)
 │   │       ├── authSlice.ts        # Auth state + fetchMe thunk
@@ -91,8 +93,9 @@ forest_bd_viewer/
 │   ├── Dockerfile                  # Multi-stage: node:20-alpine, output: standalone
 │   └── next.config.ts              # output: 'standalone'
 ├── scripts/
-│   ├── download-data.sh            # Fetch BD Forêt SHP from IGN
-│   └── import-data.sh              # ogr2ogr → PostGIS import
+│   ├── download-data.sh            # Fetch admin boundaries + cadastre from APIs; BD Forêt manual instructions
+│   ├── import-data.sh              # Wrapper for import_data.py (runs inside Docker)
+│   └── import_data.py              # PostGIS importer: ogr2ogr for SHP, psycopg2 for GeoJSON
 ├── docker-compose.yml
 ├── .env.example
 ├── tasks.md
@@ -332,3 +335,60 @@ type SpeciesBreakdown { essence: String!, areaHa: Float!, pct: Float! }
 - **Redis** is used for MVT tile caching and session data. Default TTL for tiles: use 24h unless data is dynamic.
 - **gqlgen** requires code generation after schema changes. Note that in `go.mod` gqlgen is listed under `require` — run `go generate ./internal/graph/...` to regenerate.
 - The frontend `Dockerfile` uses `output: 'standalone'` — the production entrypoint is `node server.js`, not `npm start`.
+
+---
+
+## Internationalization (i18n)
+
+The app uses a React Context-based dictionary pattern in `frontend/src/lib/i18n.tsx`.
+
+- **Default locale**: `en` (English). Toggle switches to `fr` (French).
+- **60+ translation keys** covering: analysis panel, draw buttons, legend labels, popup content, TFV classification names.
+- **Usage**: `const { t, locale, toggle } = useI18n()` — call `t('key.name')` for translated strings.
+- **Type-safe**: `DictKey` type ensures only valid keys are used at compile time.
+
+### Map component i18n
+
+Map event handlers run inside a `useEffect` that only fires once. To access the latest locale in these handlers, a `tRef` (React ref) is kept in sync: `tRef.current = t`. Popup HTML uses `tRef.current('popup.tfvCode')` etc.
+
+### Adding a new translation key
+
+1. Add the key to `dict` in `frontend/src/lib/i18n.tsx` with both `en` and `fr` values.
+2. Use `t('your.key')` in JSX or `tRef.current('your.key')` in map event handlers.
+
+---
+
+## TFV Code Normalization
+
+BD Forêt V2 stores hierarchical vegetation codes in `forest_parcels.code_tfv`:
+
+- **New BD Forêt V2** (dept 95): `FF1-00-00`, `FF1-09-09`, `FF1G01-01`, `FF2G61-61`, `LA4`, `FF31`, `FF32`, `FO1`, `FP`
+- **Legacy TFIFN** (depts 78, 91): `AFJ`, `AFV`, `CPJ`, `CPV`, `CRJ`, `CRV`, `FR`, `MR`, `HFW`, `HFZ`, `QF`, `30`, `40`, `50`
+
+The `analyzePolygon` backend query (`geo/analysis.go`) normalizes all codes to 9 canonical top-level categories using a SQL `CASE` expression:
+
+| Normalized | BD Forêt V2 sources | Legacy TFIFN sources |
+|---|---|---|
+| `FF1` | `FF1%`, `FF0` | `AFJ`, `AFV`, `HFW`, `HFZ`, `QF` |
+| `FF2` | `FF2%` | `CPJ`, `CPV`, `CRJ`, `CRV` |
+| `FF3` | `FF3%` | `FR`, `MR` |
+| `FF4` | (catch-all) | — |
+| `FO1` | `FO1%` | `30` |
+| `FO2` | `FO2%` | — |
+| `FO3` | `FO3%` | — |
+| `LA` | `LA%` | `40` |
+| `FP` | `FP` | `50` |
+
+This ensures the frontend i18n keys (`tfv.FF1`, `tfv.FF2`, etc.) always match, and the TFV breakdown provides a high-level forest structure overview complementary to the species breakdown.
+
+---
+
+## Polygon Drawing UX
+
+The polygon drawing tool uses `@mapbox/mapbox-gl-draw` with custom UI:
+
+- **No built-in toolbar** — custom buttons provided in `Map.tsx`.
+- **Drawing mode**: "Analyse area" button enters `draw_polygon` mode. Two buttons appear: green "Finish" and red "Cancel".
+- **Completing a polygon**: Clicking "Finish" calls `draw.changeMode('simple_select')`, which completes the polygon and triggers the `draw.create` event. Double-click also works as a standard fallback.
+- **Immovable polygon**: After `draw.create`, the drawn feature is removed from MapboxDraw and re-added as a static GeoJSON source/layer (`analysis-polygon-fill`, `analysis-polygon-outline`). This prevents accidental dragging.
+- **Click suppression**: All map feature click handlers (regions, departments, communes, foret, cadastre) check `analysisStatusRef.current === 'drawing'` and return early to prevent popup interference during drawing.
