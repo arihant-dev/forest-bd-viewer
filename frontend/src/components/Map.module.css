@@ -45,3 +45,79 @@
     transform: rotate(360deg);
   }
 }
+
+.legend {
+  position: absolute;
+  bottom: 40px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 6px;
+  padding: 10px 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 5;
+  max-width: 220px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.78rem;
+}
+
+.legendTitle {
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: #2d6a4f;
+  margin: 0 0 6px 0;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+.legendSwatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+/* ── Draw / Analyse button ── */
+.drawBtn {
+  position: absolute;
+  top: 12px;
+  left: 320px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  background: #fff;
+  color: #1b4332;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1.5px solid #2d6a4f;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.drawBtn:hover {
+  background: #2d6a4f;
+  color: #fff;
+}
+
+.drawBtnActive {
+  background: #c0392b;
+  color: #fff;
+  border-color: #c0392b;
+}
+
+.drawBtnActive:hover {
+  background: #a93226;
+  border-color: #a93226;
+}

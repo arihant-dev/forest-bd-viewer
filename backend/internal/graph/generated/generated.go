@@ -50,14 +50,68 @@ type ComplexityRoot struct {
 		User func(childComplexity int) int
 	}
 
+	Commune struct {
+		Code            func(childComplexity int) int
+		DepartementCode func(childComplexity int) int
+		ID              func(childComplexity int) int
+		Nom             func(childComplexity int) int
+	}
+
+	Departement struct {
+		Code       func(childComplexity int) int
+		ID         func(childComplexity int) int
+		Nom        func(childComplexity int) int
+		RegionCode func(childComplexity int) int
+	}
+
+	MapState struct {
+		Lat  func(childComplexity int) int
+		Lng  func(childComplexity int) int
+		Zoom func(childComplexity int) int
+	}
+
 	Mutation struct {
-		Login    func(childComplexity int, email string, password string) int
-		Logout   func(childComplexity int) int
-		Register func(childComplexity int, email string, password string, name string) int
+		AnalyzePolygon func(childComplexity int, geojson string) int
+		Login          func(childComplexity int, email string, password string) int
+		Logout         func(childComplexity int) int
+		Register       func(childComplexity int, email string, password string, name string) int
+		SaveMapState   func(childComplexity int, lng float64, lat float64, zoom float64) int
+	}
+
+	PolygonAnalysis struct {
+		AreaHa           func(childComplexity int) int
+		ForestCoverHa    func(childComplexity int) int
+		ForestCoverPct   func(childComplexity int) int
+		ParcelCount      func(childComplexity int) int
+		SpeciesBreakdown func(childComplexity int) int
+		TfvBreakdown     func(childComplexity int) int
 	}
 
 	Query struct {
-		Me func(childComplexity int) int
+		Communes     func(childComplexity int, departementCode *string) int
+		Departements func(childComplexity int, regionCode *string) int
+		Me           func(childComplexity int) int
+		MyMapState   func(childComplexity int) int
+		Regions      func(childComplexity int) int
+	}
+
+	Region struct {
+		Code func(childComplexity int) int
+		ID   func(childComplexity int) int
+		Nom  func(childComplexity int) int
+	}
+
+	SpeciesBreakdown struct {
+		AreaHa  func(childComplexity int) int
+		Essence func(childComplexity int) int
+		Pct     func(childComplexity int) int
+	}
+
+	TfvBreakdown struct {
+		AreaHa  func(childComplexity int) int
+		CodeTfv func(childComplexity int) int
+		LibTfv  func(childComplexity int) int
+		Pct     func(childComplexity int) int
 	}
 
 	User struct {
@@ -72,9 +126,15 @@ type MutationResolver interface {
 	Register(ctx context.Context, email string, password string, name string) (*model.AuthPayload, error)
 	Login(ctx context.Context, email string, password string) (*model.AuthPayload, error)
 	Logout(ctx context.Context) (bool, error)
+	AnalyzePolygon(ctx context.Context, geojson string) (*model.PolygonAnalysis, error)
+	SaveMapState(ctx context.Context, lng float64, lat float64, zoom float64) (bool, error)
 }
 type QueryResolver interface {
 	Me(ctx context.Context) (*model.User, error)
+	Regions(ctx context.Context) ([]*model.Region, error)
+	Departements(ctx context.Context, regionCode *string) ([]*model.Departement, error)
+	Communes(ctx context.Context, departementCode *string) ([]*model.Commune, error)
+	MyMapState(ctx context.Context) (*model.MapState, error)
 }
 
 type executableSchema struct {
@@ -103,6 +163,86 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.AuthPayload.User(childComplexity), true
 
+	case "Commune.code":
+		if e.complexity.Commune.Code == nil {
+			break
+		}
+
+		return e.complexity.Commune.Code(childComplexity), true
+	case "Commune.departementCode":
+		if e.complexity.Commune.DepartementCode == nil {
+			break
+		}
+
+		return e.complexity.Commune.DepartementCode(childComplexity), true
+	case "Commune.id":
+		if e.complexity.Commune.ID == nil {
+			break
+		}
+
+		return e.complexity.Commune.ID(childComplexity), true
+	case "Commune.nom":
+		if e.complexity.Commune.Nom == nil {
+			break
+		}
+
+		return e.complexity.Commune.Nom(childComplexity), true
+
+	case "Departement.code":
+		if e.complexity.Departement.Code == nil {
+			break
+		}
+
+		return e.complexity.Departement.Code(childComplexity), true
+	case "Departement.id":
+		if e.complexity.Departement.ID == nil {
+			break
+		}
+
+		return e.complexity.Departement.ID(childComplexity), true
+	case "Departement.nom":
+		if e.complexity.Departement.Nom == nil {
+			break
+		}
+
+		return e.complexity.Departement.Nom(childComplexity), true
+	case "Departement.regionCode":
+		if e.complexity.Departement.RegionCode == nil {
+			break
+		}
+
+		return e.complexity.Departement.RegionCode(childComplexity), true
+
+	case "MapState.lat":
+		if e.complexity.MapState.Lat == nil {
+			break
+		}
+
+		return e.complexity.MapState.Lat(childComplexity), true
+	case "MapState.lng":
+		if e.complexity.MapState.Lng == nil {
+			break
+		}
+
+		return e.complexity.MapState.Lng(childComplexity), true
+	case "MapState.zoom":
+		if e.complexity.MapState.Zoom == nil {
+			break
+		}
+
+		return e.complexity.MapState.Zoom(childComplexity), true
+
+	case "Mutation.analyzePolygon":
+		if e.complexity.Mutation.AnalyzePolygon == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_analyzePolygon_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AnalyzePolygon(childComplexity, args["geojson"].(string)), true
 	case "Mutation.login":
 		if e.complexity.Mutation.Login == nil {
 			break
@@ -131,13 +271,158 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.Register(childComplexity, args["email"].(string), args["password"].(string), args["name"].(string)), true
+	case "Mutation.saveMapState":
+		if e.complexity.Mutation.SaveMapState == nil {
+			break
+		}
 
+		args, err := ec.field_Mutation_saveMapState_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SaveMapState(childComplexity, args["lng"].(float64), args["lat"].(float64), args["zoom"].(float64)), true
+
+	case "PolygonAnalysis.areaHa":
+		if e.complexity.PolygonAnalysis.AreaHa == nil {
+			break
+		}
+
+		return e.complexity.PolygonAnalysis.AreaHa(childComplexity), true
+	case "PolygonAnalysis.forestCoverHa":
+		if e.complexity.PolygonAnalysis.ForestCoverHa == nil {
+			break
+		}
+
+		return e.complexity.PolygonAnalysis.ForestCoverHa(childComplexity), true
+	case "PolygonAnalysis.forestCoverPct":
+		if e.complexity.PolygonAnalysis.ForestCoverPct == nil {
+			break
+		}
+
+		return e.complexity.PolygonAnalysis.ForestCoverPct(childComplexity), true
+	case "PolygonAnalysis.parcelCount":
+		if e.complexity.PolygonAnalysis.ParcelCount == nil {
+			break
+		}
+
+		return e.complexity.PolygonAnalysis.ParcelCount(childComplexity), true
+	case "PolygonAnalysis.speciesBreakdown":
+		if e.complexity.PolygonAnalysis.SpeciesBreakdown == nil {
+			break
+		}
+
+		return e.complexity.PolygonAnalysis.SpeciesBreakdown(childComplexity), true
+	case "PolygonAnalysis.tfvBreakdown":
+		if e.complexity.PolygonAnalysis.TfvBreakdown == nil {
+			break
+		}
+
+		return e.complexity.PolygonAnalysis.TfvBreakdown(childComplexity), true
+
+	case "Query.communes":
+		if e.complexity.Query.Communes == nil {
+			break
+		}
+
+		args, err := ec.field_Query_communes_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Communes(childComplexity, args["departementCode"].(*string)), true
+	case "Query.departements":
+		if e.complexity.Query.Departements == nil {
+			break
+		}
+
+		args, err := ec.field_Query_departements_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Departements(childComplexity, args["regionCode"].(*string)), true
 	case "Query.me":
 		if e.complexity.Query.Me == nil {
 			break
 		}
 
 		return e.complexity.Query.Me(childComplexity), true
+	case "Query.myMapState":
+		if e.complexity.Query.MyMapState == nil {
+			break
+		}
+
+		return e.complexity.Query.MyMapState(childComplexity), true
+	case "Query.regions":
+		if e.complexity.Query.Regions == nil {
+			break
+		}
+
+		return e.complexity.Query.Regions(childComplexity), true
+
+	case "Region.code":
+		if e.complexity.Region.Code == nil {
+			break
+		}
+
+		return e.complexity.Region.Code(childComplexity), true
+	case "Region.id":
+		if e.complexity.Region.ID == nil {
+			break
+		}
+
+		return e.complexity.Region.ID(childComplexity), true
+	case "Region.nom":
+		if e.complexity.Region.Nom == nil {
+			break
+		}
+
+		return e.complexity.Region.Nom(childComplexity), true
+
+	case "SpeciesBreakdown.areaHa":
+		if e.complexity.SpeciesBreakdown.AreaHa == nil {
+			break
+		}
+
+		return e.complexity.SpeciesBreakdown.AreaHa(childComplexity), true
+	case "SpeciesBreakdown.essence":
+		if e.complexity.SpeciesBreakdown.Essence == nil {
+			break
+		}
+
+		return e.complexity.SpeciesBreakdown.Essence(childComplexity), true
+	case "SpeciesBreakdown.pct":
+		if e.complexity.SpeciesBreakdown.Pct == nil {
+			break
+		}
+
+		return e.complexity.SpeciesBreakdown.Pct(childComplexity), true
+
+	case "TfvBreakdown.areaHa":
+		if e.complexity.TfvBreakdown.AreaHa == nil {
+			break
+		}
+
+		return e.complexity.TfvBreakdown.AreaHa(childComplexity), true
+	case "TfvBreakdown.codeTfv":
+		if e.complexity.TfvBreakdown.CodeTfv == nil {
+			break
+		}
+
+		return e.complexity.TfvBreakdown.CodeTfv(childComplexity), true
+	case "TfvBreakdown.libTfv":
+		if e.complexity.TfvBreakdown.LibTfv == nil {
+			break
+		}
+
+		return e.complexity.TfvBreakdown.LibTfv(childComplexity), true
+	case "TfvBreakdown.pct":
+		if e.complexity.TfvBreakdown.Pct == nil {
+			break
+		}
+
+		return e.complexity.TfvBreakdown.Pct(childComplexity), true
 
 	case "User.createdAt":
 		if e.complexity.User.CreatedAt == nil {
@@ -268,7 +553,59 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	{Name: "../schema/schema.graphql", Input: `type Query {
+	{Name: "../schema/admin.graphql", Input: `extend type Query {
+  regions: [Region!]!
+  departements(regionCode: String): [Departement!]!
+  communes(departementCode: String): [Commune!]!
+}
+
+type Region {
+  id: ID!
+  code: String!
+  nom: String!
+}
+
+type Departement {
+  id: ID!
+  code: String!
+  nom: String!
+  regionCode: String
+}
+
+type Commune {
+  id: ID!
+  code: String!
+  nom: String!
+  departementCode: String
+}
+`, BuiltIn: false},
+	{Name: "../schema/analysis.graphql", Input: `extend type Mutation {
+  analyzePolygon(geojson: String!): PolygonAnalysis!
+}
+
+type PolygonAnalysis {
+  areaHa:        Float!
+  forestCoverHa: Float!
+  forestCoverPct: Float!
+  parcelCount:   Int!
+  tfvBreakdown:  [TfvBreakdown!]!
+  speciesBreakdown: [SpeciesBreakdown!]!
+}
+
+type TfvBreakdown {
+  codeTfv: String!
+  libTfv:  String!
+  areaHa:  Float!
+  pct:     Float!
+}
+
+type SpeciesBreakdown {
+  essence: String!
+  areaHa:  Float!
+  pct:     Float!
+}
+`, BuiltIn: false},
+	{Name: "../schema/auth.graphql", Input: `type Query {
   me: User
 }
 
@@ -289,12 +626,37 @@ type User {
   createdAt: String!
 }
 `, BuiltIn: false},
+	{Name: "../schema/map.graphql", Input: `extend type Query {
+  myMapState: MapState
+}
+
+extend type Mutation {
+  saveMapState(lng: Float!, lat: Float!, zoom: Float!): Boolean!
+}
+
+type MapState {
+  lng: Float!
+  lat: Float!
+  zoom: Float!
+}
+`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_analyzePolygon_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "geojson", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["geojson"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
@@ -333,6 +695,27 @@ func (ec *executionContext) field_Mutation_register_args(ctx context.Context, ra
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_saveMapState_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "lng", ec.unmarshalNFloat2float64)
+	if err != nil {
+		return nil, err
+	}
+	args["lng"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "lat", ec.unmarshalNFloat2float64)
+	if err != nil {
+		return nil, err
+	}
+	args["lat"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "zoom", ec.unmarshalNFloat2float64)
+	if err != nil {
+		return nil, err
+	}
+	args["zoom"] = arg2
+	return args, nil
+}
+
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -341,6 +724,28 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		return nil, err
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_communes_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "departementCode", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["departementCode"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_departements_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "regionCode", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["regionCode"] = arg0
 	return args, nil
 }
 
@@ -430,6 +835,325 @@ func (ec *executionContext) fieldContext_AuthPayload_user(_ context.Context, fie
 				return ec.fieldContext_User_createdAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Commune_id(ctx context.Context, field graphql.CollectedField, obj *model.Commune) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Commune_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Commune_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Commune",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Commune_code(ctx context.Context, field graphql.CollectedField, obj *model.Commune) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Commune_code,
+		func(ctx context.Context) (any, error) {
+			return obj.Code, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Commune_code(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Commune",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Commune_nom(ctx context.Context, field graphql.CollectedField, obj *model.Commune) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Commune_nom,
+		func(ctx context.Context) (any, error) {
+			return obj.Nom, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Commune_nom(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Commune",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Commune_departementCode(ctx context.Context, field graphql.CollectedField, obj *model.Commune) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Commune_departementCode,
+		func(ctx context.Context) (any, error) {
+			return obj.DepartementCode, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Commune_departementCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Commune",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Departement_id(ctx context.Context, field graphql.CollectedField, obj *model.Departement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Departement_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Departement_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Departement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Departement_code(ctx context.Context, field graphql.CollectedField, obj *model.Departement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Departement_code,
+		func(ctx context.Context) (any, error) {
+			return obj.Code, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Departement_code(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Departement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Departement_nom(ctx context.Context, field graphql.CollectedField, obj *model.Departement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Departement_nom,
+		func(ctx context.Context) (any, error) {
+			return obj.Nom, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Departement_nom(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Departement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Departement_regionCode(ctx context.Context, field graphql.CollectedField, obj *model.Departement) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Departement_regionCode,
+		func(ctx context.Context) (any, error) {
+			return obj.RegionCode, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Departement_regionCode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Departement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapState_lng(ctx context.Context, field graphql.CollectedField, obj *model.MapState) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapState_lng,
+		func(ctx context.Context) (any, error) {
+			return obj.Lng, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapState_lng(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapState",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapState_lat(ctx context.Context, field graphql.CollectedField, obj *model.MapState) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapState_lat,
+		func(ctx context.Context) (any, error) {
+			return obj.Lat, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapState_lat(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapState",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MapState_zoom(ctx context.Context, field graphql.CollectedField, obj *model.MapState) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MapState_zoom,
+		func(ctx context.Context) (any, error) {
+			return obj.Zoom, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MapState_zoom(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MapState",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
 	return fc, nil
@@ -554,6 +1278,294 @@ func (ec *executionContext) fieldContext_Mutation_logout(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_analyzePolygon(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_analyzePolygon,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().AnalyzePolygon(ctx, fc.Args["geojson"].(string))
+		},
+		nil,
+		ec.marshalNPolygonAnalysis2ᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐPolygonAnalysis,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_analyzePolygon(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "areaHa":
+				return ec.fieldContext_PolygonAnalysis_areaHa(ctx, field)
+			case "forestCoverHa":
+				return ec.fieldContext_PolygonAnalysis_forestCoverHa(ctx, field)
+			case "forestCoverPct":
+				return ec.fieldContext_PolygonAnalysis_forestCoverPct(ctx, field)
+			case "parcelCount":
+				return ec.fieldContext_PolygonAnalysis_parcelCount(ctx, field)
+			case "tfvBreakdown":
+				return ec.fieldContext_PolygonAnalysis_tfvBreakdown(ctx, field)
+			case "speciesBreakdown":
+				return ec.fieldContext_PolygonAnalysis_speciesBreakdown(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PolygonAnalysis", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_analyzePolygon_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_saveMapState(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_saveMapState,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().SaveMapState(ctx, fc.Args["lng"].(float64), fc.Args["lat"].(float64), fc.Args["zoom"].(float64))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_saveMapState(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_saveMapState_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PolygonAnalysis_areaHa(ctx context.Context, field graphql.CollectedField, obj *model.PolygonAnalysis) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PolygonAnalysis_areaHa,
+		func(ctx context.Context) (any, error) {
+			return obj.AreaHa, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PolygonAnalysis_areaHa(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PolygonAnalysis",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PolygonAnalysis_forestCoverHa(ctx context.Context, field graphql.CollectedField, obj *model.PolygonAnalysis) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PolygonAnalysis_forestCoverHa,
+		func(ctx context.Context) (any, error) {
+			return obj.ForestCoverHa, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PolygonAnalysis_forestCoverHa(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PolygonAnalysis",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PolygonAnalysis_forestCoverPct(ctx context.Context, field graphql.CollectedField, obj *model.PolygonAnalysis) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PolygonAnalysis_forestCoverPct,
+		func(ctx context.Context) (any, error) {
+			return obj.ForestCoverPct, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PolygonAnalysis_forestCoverPct(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PolygonAnalysis",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PolygonAnalysis_parcelCount(ctx context.Context, field graphql.CollectedField, obj *model.PolygonAnalysis) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PolygonAnalysis_parcelCount,
+		func(ctx context.Context) (any, error) {
+			return obj.ParcelCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PolygonAnalysis_parcelCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PolygonAnalysis",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PolygonAnalysis_tfvBreakdown(ctx context.Context, field graphql.CollectedField, obj *model.PolygonAnalysis) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PolygonAnalysis_tfvBreakdown,
+		func(ctx context.Context) (any, error) {
+			return obj.TfvBreakdown, nil
+		},
+		nil,
+		ec.marshalNTfvBreakdown2ᚕᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐTfvBreakdownᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PolygonAnalysis_tfvBreakdown(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PolygonAnalysis",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "codeTfv":
+				return ec.fieldContext_TfvBreakdown_codeTfv(ctx, field)
+			case "libTfv":
+				return ec.fieldContext_TfvBreakdown_libTfv(ctx, field)
+			case "areaHa":
+				return ec.fieldContext_TfvBreakdown_areaHa(ctx, field)
+			case "pct":
+				return ec.fieldContext_TfvBreakdown_pct(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TfvBreakdown", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PolygonAnalysis_speciesBreakdown(ctx context.Context, field graphql.CollectedField, obj *model.PolygonAnalysis) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PolygonAnalysis_speciesBreakdown,
+		func(ctx context.Context) (any, error) {
+			return obj.SpeciesBreakdown, nil
+		},
+		nil,
+		ec.marshalNSpeciesBreakdown2ᚕᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐSpeciesBreakdownᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PolygonAnalysis_speciesBreakdown(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PolygonAnalysis",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "essence":
+				return ec.fieldContext_SpeciesBreakdown_essence(ctx, field)
+			case "areaHa":
+				return ec.fieldContext_SpeciesBreakdown_areaHa(ctx, field)
+			case "pct":
+				return ec.fieldContext_SpeciesBreakdown_pct(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SpeciesBreakdown", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_me(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -588,6 +1600,182 @@ func (ec *executionContext) fieldContext_Query_me(_ context.Context, field graph
 				return ec.fieldContext_User_createdAt(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_regions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_regions,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().Regions(ctx)
+		},
+		nil,
+		ec.marshalNRegion2ᚕᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐRegionᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_regions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Region_id(ctx, field)
+			case "code":
+				return ec.fieldContext_Region_code(ctx, field)
+			case "nom":
+				return ec.fieldContext_Region_nom(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Region", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_departements(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_departements,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().Departements(ctx, fc.Args["regionCode"].(*string))
+		},
+		nil,
+		ec.marshalNDepartement2ᚕᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐDepartementᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_departements(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Departement_id(ctx, field)
+			case "code":
+				return ec.fieldContext_Departement_code(ctx, field)
+			case "nom":
+				return ec.fieldContext_Departement_nom(ctx, field)
+			case "regionCode":
+				return ec.fieldContext_Departement_regionCode(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Departement", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_departements_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_communes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_communes,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Query().Communes(ctx, fc.Args["departementCode"].(*string))
+		},
+		nil,
+		ec.marshalNCommune2ᚕᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐCommuneᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_communes(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Commune_id(ctx, field)
+			case "code":
+				return ec.fieldContext_Commune_code(ctx, field)
+			case "nom":
+				return ec.fieldContext_Commune_nom(ctx, field)
+			case "departementCode":
+				return ec.fieldContext_Commune_departementCode(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Commune", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_communes_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_myMapState(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_myMapState,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Query().MyMapState(ctx)
+		},
+		nil,
+		ec.marshalOMapState2ᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐMapState,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_myMapState(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "lng":
+				return ec.fieldContext_MapState_lng(ctx, field)
+			case "lat":
+				return ec.fieldContext_MapState_lat(ctx, field)
+			case "zoom":
+				return ec.fieldContext_MapState_zoom(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MapState", field.Name)
 		},
 	}
 	return fc, nil
@@ -696,6 +1884,296 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Region_id(ctx context.Context, field graphql.CollectedField, obj *model.Region) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Region_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Region_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Region",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Region_code(ctx context.Context, field graphql.CollectedField, obj *model.Region) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Region_code,
+		func(ctx context.Context) (any, error) {
+			return obj.Code, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Region_code(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Region",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Region_nom(ctx context.Context, field graphql.CollectedField, obj *model.Region) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Region_nom,
+		func(ctx context.Context) (any, error) {
+			return obj.Nom, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Region_nom(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Region",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SpeciesBreakdown_essence(ctx context.Context, field graphql.CollectedField, obj *model.SpeciesBreakdown) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SpeciesBreakdown_essence,
+		func(ctx context.Context) (any, error) {
+			return obj.Essence, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SpeciesBreakdown_essence(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SpeciesBreakdown",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SpeciesBreakdown_areaHa(ctx context.Context, field graphql.CollectedField, obj *model.SpeciesBreakdown) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SpeciesBreakdown_areaHa,
+		func(ctx context.Context) (any, error) {
+			return obj.AreaHa, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SpeciesBreakdown_areaHa(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SpeciesBreakdown",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SpeciesBreakdown_pct(ctx context.Context, field graphql.CollectedField, obj *model.SpeciesBreakdown) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SpeciesBreakdown_pct,
+		func(ctx context.Context) (any, error) {
+			return obj.Pct, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SpeciesBreakdown_pct(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SpeciesBreakdown",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TfvBreakdown_codeTfv(ctx context.Context, field graphql.CollectedField, obj *model.TfvBreakdown) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TfvBreakdown_codeTfv,
+		func(ctx context.Context) (any, error) {
+			return obj.CodeTfv, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TfvBreakdown_codeTfv(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TfvBreakdown",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TfvBreakdown_libTfv(ctx context.Context, field graphql.CollectedField, obj *model.TfvBreakdown) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TfvBreakdown_libTfv,
+		func(ctx context.Context) (any, error) {
+			return obj.LibTfv, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TfvBreakdown_libTfv(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TfvBreakdown",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TfvBreakdown_areaHa(ctx context.Context, field graphql.CollectedField, obj *model.TfvBreakdown) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TfvBreakdown_areaHa,
+		func(ctx context.Context) (any, error) {
+			return obj.AreaHa, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TfvBreakdown_areaHa(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TfvBreakdown",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TfvBreakdown_pct(ctx context.Context, field graphql.CollectedField, obj *model.TfvBreakdown) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TfvBreakdown_pct,
+		func(ctx context.Context) (any, error) {
+			return obj.Pct, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TfvBreakdown_pct(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TfvBreakdown",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
 	return fc, nil
@@ -2310,6 +3788,157 @@ func (ec *executionContext) _AuthPayload(ctx context.Context, sel ast.SelectionS
 	return out
 }
 
+var communeImplementors = []string{"Commune"}
+
+func (ec *executionContext) _Commune(ctx context.Context, sel ast.SelectionSet, obj *model.Commune) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, communeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Commune")
+		case "id":
+			out.Values[i] = ec._Commune_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "code":
+			out.Values[i] = ec._Commune_code(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "nom":
+			out.Values[i] = ec._Commune_nom(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "departementCode":
+			out.Values[i] = ec._Commune_departementCode(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var departementImplementors = []string{"Departement"}
+
+func (ec *executionContext) _Departement(ctx context.Context, sel ast.SelectionSet, obj *model.Departement) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, departementImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Departement")
+		case "id":
+			out.Values[i] = ec._Departement_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "code":
+			out.Values[i] = ec._Departement_code(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "nom":
+			out.Values[i] = ec._Departement_nom(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "regionCode":
+			out.Values[i] = ec._Departement_regionCode(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var mapStateImplementors = []string{"MapState"}
+
+func (ec *executionContext) _MapState(ctx context.Context, sel ast.SelectionSet, obj *model.MapState) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mapStateImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MapState")
+		case "lng":
+			out.Values[i] = ec._MapState_lng(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lat":
+			out.Values[i] = ec._MapState_lat(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "zoom":
+			out.Values[i] = ec._MapState_zoom(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -2347,6 +3976,84 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_logout(ctx, field)
 			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "analyzePolygon":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_analyzePolygon(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "saveMapState":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_saveMapState(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var polygonAnalysisImplementors = []string{"PolygonAnalysis"}
+
+func (ec *executionContext) _PolygonAnalysis(ctx context.Context, sel ast.SelectionSet, obj *model.PolygonAnalysis) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, polygonAnalysisImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PolygonAnalysis")
+		case "areaHa":
+			out.Values[i] = ec._PolygonAnalysis_areaHa(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "forestCoverHa":
+			out.Values[i] = ec._PolygonAnalysis_forestCoverHa(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "forestCoverPct":
+			out.Values[i] = ec._PolygonAnalysis_forestCoverPct(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "parcelCount":
+			out.Values[i] = ec._PolygonAnalysis_parcelCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "tfvBreakdown":
+			out.Values[i] = ec._PolygonAnalysis_tfvBreakdown(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "speciesBreakdown":
+			out.Values[i] = ec._PolygonAnalysis_speciesBreakdown(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -2411,6 +4118,91 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "regions":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_regions(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "departements":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_departements(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "communes":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_communes(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "myMapState":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_myMapState(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -2419,6 +4211,158 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___schema(ctx, field)
 			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var regionImplementors = []string{"Region"}
+
+func (ec *executionContext) _Region(ctx context.Context, sel ast.SelectionSet, obj *model.Region) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, regionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Region")
+		case "id":
+			out.Values[i] = ec._Region_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "code":
+			out.Values[i] = ec._Region_code(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "nom":
+			out.Values[i] = ec._Region_nom(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var speciesBreakdownImplementors = []string{"SpeciesBreakdown"}
+
+func (ec *executionContext) _SpeciesBreakdown(ctx context.Context, sel ast.SelectionSet, obj *model.SpeciesBreakdown) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, speciesBreakdownImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SpeciesBreakdown")
+		case "essence":
+			out.Values[i] = ec._SpeciesBreakdown_essence(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "areaHa":
+			out.Values[i] = ec._SpeciesBreakdown_areaHa(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pct":
+			out.Values[i] = ec._SpeciesBreakdown_pct(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var tfvBreakdownImplementors = []string{"TfvBreakdown"}
+
+func (ec *executionContext) _TfvBreakdown(ctx context.Context, sel ast.SelectionSet, obj *model.TfvBreakdown) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, tfvBreakdownImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TfvBreakdown")
+		case "codeTfv":
+			out.Values[i] = ec._TfvBreakdown_codeTfv(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "libTfv":
+			out.Values[i] = ec._TfvBreakdown_libTfv(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "areaHa":
+			out.Values[i] = ec._TfvBreakdown_areaHa(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pct":
+			out.Values[i] = ec._TfvBreakdown_pct(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2861,6 +4805,130 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) marshalNCommune2ᚕᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐCommuneᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Commune) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNCommune2ᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐCommune(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNCommune2ᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐCommune(ctx context.Context, sel ast.SelectionSet, v *model.Commune) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Commune(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNDepartement2ᚕᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐDepartementᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Departement) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNDepartement2ᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐDepartement(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNDepartement2ᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐDepartement(ctx context.Context, sel ast.SelectionSet, v *model.Departement) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Departement(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) (float64, error) {
+	res, err := graphql.UnmarshalFloatContext(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
+	_ = sel
+	res := graphql.MarshalFloatContext(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return graphql.WrapContextMarshaler(ctx, res)
+}
+
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v any) (string, error) {
 	res, err := graphql.UnmarshalID(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -2877,6 +4945,144 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
+func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v any) (int, error) {
+	res, err := graphql.UnmarshalInt(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	_ = sel
+	res := graphql.MarshalInt(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) marshalNPolygonAnalysis2forestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐPolygonAnalysis(ctx context.Context, sel ast.SelectionSet, v model.PolygonAnalysis) graphql.Marshaler {
+	return ec._PolygonAnalysis(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPolygonAnalysis2ᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐPolygonAnalysis(ctx context.Context, sel ast.SelectionSet, v *model.PolygonAnalysis) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PolygonAnalysis(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNRegion2ᚕᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐRegionᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Region) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNRegion2ᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐRegion(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNRegion2ᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐRegion(ctx context.Context, sel ast.SelectionSet, v *model.Region) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Region(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSpeciesBreakdown2ᚕᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐSpeciesBreakdownᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SpeciesBreakdown) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNSpeciesBreakdown2ᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐSpeciesBreakdown(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSpeciesBreakdown2ᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐSpeciesBreakdown(ctx context.Context, sel ast.SelectionSet, v *model.SpeciesBreakdown) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SpeciesBreakdown(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) (string, error) {
 	res, err := graphql.UnmarshalString(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -2891,6 +5097,60 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNTfvBreakdown2ᚕᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐTfvBreakdownᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.TfvBreakdown) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNTfvBreakdown2ᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐTfvBreakdown(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNTfvBreakdown2ᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐTfvBreakdown(ctx context.Context, sel ast.SelectionSet, v *model.TfvBreakdown) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TfvBreakdown(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNUser2ᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
@@ -3184,6 +5444,13 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	_ = ctx
 	res := graphql.MarshalBoolean(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOMapState2ᚖforestᚑbdᚑviewerᚋinternalᚋgraphᚋmodelᚐMapState(ctx context.Context, sel ast.SelectionSet, v *model.MapState) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._MapState(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v any) (*string, error) {

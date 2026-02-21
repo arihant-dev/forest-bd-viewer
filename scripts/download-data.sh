@@ -11,8 +11,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DATA_DIR="${SCRIPT_DIR}/../data/raw"
 
-# Target departments for Île-de-France (adjust as needed)
-DEPTS=("78" "91" "95")
+# Target departments for Île-de-France
+DEPTS=("77" "78" "91" "95")
 
 # ─── Directories ─────────────────────────────────────────────────────────────
 mkdir -p "${DATA_DIR}/admin/communes"
@@ -24,31 +24,84 @@ echo "==================================================================="
 echo ""
 
 # ─── 1. Admin Boundaries ─────────────────────────────────────────────────────
-echo "[1/3] Downloading admin boundaries from geo.api.gouv.fr"
+# Note: geo.api.gouv.fr /regions and /departements endpoints do NOT support
+# GeoJSON output (they return plain JSON arrays with no geometry regardless of
+# format parameter). We use the france-geojson community dataset instead, which
+# provides proper GeoJSON FeatureCollections derived from IGN Admin-Express.
+echo "[1/3] Downloading admin boundaries"
+echo "      (france-geojson for regions/depts, geo.api.gouv.fr for communes)"
 echo ""
 
-# Regions (France-wide; the import script will filter IDF = 11)
-REGIONS_URL="https://geo.api.gouv.fr/regions?fields=code,nom&geometry=geom&format=geojson"
+# Regions — france-geojson GitHub (IGN Admin-Express derived, open data)
+REGIONS_URL="https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/regions.geojson"
 REGIONS_OUT="${DATA_DIR}/admin/regions.geojson"
 echo "  → Regions..."
-if curl -L --fail --silent --max-time 60 -o "${REGIONS_OUT}" "${REGIONS_URL}"; then
-    size=$(du -h "${REGIONS_OUT}" | cut -f1)
-    echo "    OK (${size})"
+# Force re-download if the file has no geometry (previously broken download)
+if [[ -f "${REGIONS_OUT}" ]]; then
+    has_geom=$(python3 -c "
+import json, sys
+with open('${REGIONS_OUT}') as f:
+    d = json.load(f)
+if isinstance(d, list):
+    print('no')
+elif isinstance(d, dict) and 'features' in d and d['features'] and 'geometry' in d['features'][0]:
+    print('yes')
+else:
+    print('no')
+" 2>/dev/null || echo "no")
+    if [[ "${has_geom}" == "no" ]]; then
+        echo "    Existing file has no geometry, re-downloading..."
+        rm -f "${REGIONS_OUT}"
+    fi
+fi
+if [[ ! -f "${REGIONS_OUT}" ]]; then
+    if curl -L --fail --silent --max-time 60 -o "${REGIONS_OUT}" "${REGIONS_URL}"; then
+        size=$(du -h "${REGIONS_OUT}" | cut -f1)
+        count=$(python3 -c "import json; d=json.load(open('${REGIONS_OUT}')); print(len(d.get('features', d)))" 2>/dev/null || echo "?")
+        echo "    OK (${size}, ${count} features)"
+    else
+        echo "    WARN: Failed to download regions"
+        rm -f "${REGIONS_OUT}"
+    fi
 else
-    echo "    WARN: Failed to download regions"
-    rm -f "${REGIONS_OUT}"
+    echo "    Already downloaded, skipping"
 fi
 
-# Departments (France-wide; import script uses code filter too)
-DEPTS_URL="https://geo.api.gouv.fr/departements?fields=code,nom,region&geometry=geom&format=geojson"
+# Departments — france-geojson GitHub
+# Note: this file does NOT include region_code in properties.
+# The import script derives region_code via PostGIS spatial query (ST_Within).
+DEPTS_URL="https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/departements.geojson"
 DEPTS_OUT="${DATA_DIR}/admin/departements.geojson"
 echo "  → Departments..."
-if curl -L --fail --silent --max-time 60 -o "${DEPTS_OUT}" "${DEPTS_URL}"; then
-    size=$(du -h "${DEPTS_OUT}" | cut -f1)
-    echo "    OK (${size})"
+# Force re-download if the file has no geometry (previously broken download)
+if [[ -f "${DEPTS_OUT}" ]]; then
+    has_geom=$(python3 -c "
+import json, sys
+with open('${DEPTS_OUT}') as f:
+    d = json.load(f)
+if isinstance(d, list):
+    print('no')
+elif isinstance(d, dict) and 'features' in d and d['features'] and 'geometry' in d['features'][0]:
+    print('yes')
+else:
+    print('no')
+" 2>/dev/null || echo "no")
+    if [[ "${has_geom}" == "no" ]]; then
+        echo "    Existing file has no geometry, re-downloading..."
+        rm -f "${DEPTS_OUT}"
+    fi
+fi
+if [[ ! -f "${DEPTS_OUT}" ]]; then
+    if curl -L --fail --silent --max-time 60 -o "${DEPTS_OUT}" "${DEPTS_URL}"; then
+        size=$(du -h "${DEPTS_OUT}" | cut -f1)
+        count=$(python3 -c "import json; d=json.load(open('${DEPTS_OUT}')); print(len(d.get('features', d)))" 2>/dev/null || echo "?")
+        echo "    OK (${size}, ${count} features)"
+    else
+        echo "    WARN: Failed to download departments"
+        rm -f "${DEPTS_OUT}"
+    fi
 else
-    echo "    WARN: Failed to download departments"
-    rm -f "${DEPTS_OUT}"
+    echo "    Already downloaded, skipping"
 fi
 
 # Communes per target department (geometry=contour for full polygons)
@@ -56,8 +109,13 @@ echo "  → Communes..."
 for dept in "${DEPTS[@]}"; do
     COMM_URL="https://geo.api.gouv.fr/departements/${dept}/communes?fields=code,nom&geometry=contour&format=geojson"
     COMM_OUT="${DATA_DIR}/admin/communes/${dept}-communes.geojson"
+    if [[ -f "${COMM_OUT}" ]]; then
+        count=$(python3 -c "import json; d=json.load(open('${COMM_OUT}')); print(len(d.get('features', [])))" 2>/dev/null || echo "?")
+        echo "    Dept ${dept}: already downloaded (${count} communes)"
+        continue
+    fi
     if curl -L --fail --silent --max-time 120 -o "${COMM_OUT}" "${COMM_URL}"; then
-        count=$(python3 -c "import json,sys; d=json.load(open('${COMM_OUT}')); print(len(d['features']))" 2>/dev/null || echo "?")
+        count=$(python3 -c "import json; d=json.load(open('${COMM_OUT}')); print(len(d.get('features', [])))" 2>/dev/null || echo "?")
         echo "    Dept ${dept}: ${count} communes"
     else
         echo "    WARN: Failed to download communes for dept ${dept}"
@@ -85,7 +143,7 @@ for dept in "${DEPTS[@]}"; do
         continue
     fi
 
-    # Extract commune codes from the GeoJSON properties.code field
+    # Extract commune codes from the GeoJSON features
     mapfile -t commune_codes < <(
         python3 -c "
 import json, sys
@@ -169,7 +227,7 @@ echo " Summary"
 echo "==================================================================="
 echo ""
 echo "  Admin boundaries:"
-[[ -f "${DATA_DIR}/admin/regions.geojson" ]]       && echo "    regions.geojson ✓"     || echo "    regions.geojson MISSING"
+[[ -f "${DATA_DIR}/admin/regions.geojson" ]]       && echo "    regions.geojson ✓"      || echo "    regions.geojson MISSING"
 [[ -f "${DATA_DIR}/admin/departements.geojson" ]]  && echo "    departements.geojson ✓" || echo "    departements.geojson MISSING"
 for dept in "${DEPTS[@]}"; do
     f="${DATA_DIR}/admin/communes/${dept}-communes.geojson"

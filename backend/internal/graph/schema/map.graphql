@@ -1,0 +1,13 @@
+extend type Query {
+  myMapState: MapState
+}
+
+extend type Mutation {
+  saveMapState(lng: Float!, lat: Float!, zoom: Float!): Boolean!
+}
+
+type MapState {
+  lng: Float!
+  lat: Float!
+  zoom: Float!
+}

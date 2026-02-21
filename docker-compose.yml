@@ -40,6 +40,9 @@ services:
     container_name: forest_backend
     restart: unless-stopped
     env_file: .env
+    volumes:
+      - ./scripts:/app/scripts:ro
+      - ./data/raw:/app/data/raw:rwo
     ports:
       - "8080:8080"
     depends_on:
@@ -52,6 +55,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_MAPBOX_TOKEN: ${NEXT_PUBLIC_MAPBOX_TOKEN}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     container_name: forest_frontend
     restart: unless-stopped
     env_file: .env

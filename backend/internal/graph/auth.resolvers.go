@@ -8,12 +8,11 @@ package graph
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"time"
-
 	"forest-bd-viewer/internal/auth"
 	"forest-bd-viewer/internal/graph/generated"
 	"forest-bd-viewer/internal/graph/model"
+	"net/http"
+	"time"
 )
 
 // Register is the resolver for the register field.
