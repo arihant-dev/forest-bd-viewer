@@ -6,6 +6,7 @@ import { store } from '@/store';
 import { fetchMe } from '@/store/authSlice';
 import { fetchMapState } from '@/store/mapSlice';
 import { I18nProvider } from '@/lib/i18n';
+import { ThemeProvider } from '@/lib/theme';
 
 function AppInit({ children }: { children: React.ReactNode }) {
     useEffect(() => {
@@ -23,7 +24,9 @@ export default function StoreProvider({
     return (
         <Provider store={store}>
             <I18nProvider>
-                <AppInit>{children}</AppInit>
+                <ThemeProvider>
+                    <AppInit>{children}</AppInit>
+                </ThemeProvider>
             </I18nProvider>
         </Provider>
     );

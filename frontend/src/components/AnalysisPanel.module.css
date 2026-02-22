@@ -5,13 +5,25 @@
   width: 300px;
   max-height: calc(100vh - 80px);
   overflow-y: auto;
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--color-surface-panel);
   border-radius: 8px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
   z-index: 10;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.8rem;
-  color: #222;
+  color: var(--color-text);
+  animation: panelSlideIn 0.3s ease-out;
+}
+
+@keyframes panelSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* ── Header ── */
@@ -20,13 +32,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px 8px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .title {
   font-weight: 700;
   font-size: 0.88rem;
-  color: #1b4332;
+  color: var(--color-primary-dark);
 }
 
 .closeBtn {
@@ -34,20 +46,20 @@
   border: none;
   cursor: pointer;
   font-size: 0.85rem;
-  color: #777;
+  color: var(--color-text-icon);
   padding: 2px 4px;
   border-radius: 4px;
   line-height: 1;
 }
 .closeBtn:hover {
-  background: #f0f0f0;
-  color: #333;
+  background: var(--color-bg-muted);
+  color: var(--color-text-secondary);
 }
 
 /* ── Hint / status ── */
 .hint {
   margin: 12px 14px;
-  color: #666;
+  color: var(--color-text-muted);
   line-height: 1.5;
   font-size: 0.78rem;
 }
@@ -57,14 +69,14 @@
   align-items: center;
   gap: 8px;
   padding: 12px 14px;
-  color: #555;
+  color: var(--color-text-dim);
 }
 
 .spinnerSmall {
   width: 16px;
   height: 16px;
-  border: 2px solid #e0e0e0;
-  border-top-color: #2d6a4f;
+  border: 2px solid var(--color-border-light);
+  border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   flex-shrink: 0;
@@ -76,7 +88,7 @@
 
 .error {
   margin: 12px 14px;
-  color: #c0392b;
+  color: var(--color-error);
   font-size: 0.78rem;
   line-height: 1.4;
 }
@@ -86,8 +98,20 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1px;
-  background: #eee;
-  border-top: 1px solid #eee;
+  background: var(--color-border-subtle);
+  border-top: 1px solid var(--color-border-subtle);
+  animation: fadeUp 0.4s ease-out 0.1s both;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .metric {
@@ -95,40 +119,40 @@
   flex-direction: column;
   align-items: center;
   padding: 10px 6px;
-  background: #fff;
+  background: var(--color-surface);
   text-align: center;
 }
 
 .metricValue {
   font-size: 1.05rem;
   font-weight: 700;
-  color: #1b4332;
+  color: var(--color-primary-dark);
   line-height: 1.2;
 }
 
 .metricLabel {
   font-size: 0.68rem;
-  color: #888;
+  color: var(--color-text-muted);
   margin-top: 2px;
 }
 
 /* ── Forest cover bar ── */
 .coverBar {
   height: 6px;
-  background: #e8f5e9;
+  background: var(--color-cover-track);
   margin: 0;
 }
 
 .coverBarFill {
   height: 100%;
-  background: linear-gradient(90deg, #2d9e55, #52b788);
-  transition: width 0.4s ease;
+  background: linear-gradient(90deg, var(--color-cover-gradient-start), var(--color-cover-gradient-end));
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ── Section ── */
 .section {
   padding: 10px 14px 6px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--color-bg-muted);
 }
 
 .sectionTitle {
@@ -136,7 +160,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #2d6a4f;
+  color: var(--color-primary);
   margin: 0 0 8px;
 }
 
@@ -161,7 +185,7 @@
   height: 10px;
   border-radius: 2px;
   flex-shrink: 0;
-  background: #52b788;
+  background: var(--color-primary-light);
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
@@ -171,13 +195,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 0.75rem;
-  color: #333;
+  color: var(--color-text-secondary);
 }
 
 .breakdownBar {
   flex: 1;
   height: 8px;
-  background: #f0f0f0;
+  background: var(--color-bg-muted);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -187,14 +211,14 @@
   height: 100%;
   border-radius: 4px;
   opacity: 0.85;
-  transition: width 0.3s ease;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .breakdownPct {
   flex: 0 0 30px;
   text-align: right;
   font-size: 0.72rem;
-  color: #555;
+  color: var(--color-text-dim);
   font-variant-numeric: tabular-nums;
 }
 
@@ -214,19 +238,19 @@
 
 .lidarLabel {
   font-size: 0.75rem;
-  color: #555;
+  color: var(--color-text-dim);
 }
 
 .lidarValue {
   font-size: 0.8rem;
   font-weight: 600;
-  color: #1b4332;
+  color: var(--color-primary-dark);
   font-variant-numeric: tabular-nums;
 }
 
 .lidarOverlayNote {
   margin-top: 6px;
   font-size: 0.72rem;
-  color: #2d6a4f;
+  color: var(--color-primary);
   font-style: italic;
 }

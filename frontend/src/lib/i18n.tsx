@@ -66,6 +66,25 @@ const dict = {
   'lang.toggle':             { en: 'FR',                                        fr: 'EN' },
   'lang.toggleTitle':        { en: 'Switch to French',                          fr: 'Switch to English' },
 
+  // Theme toggle
+  'theme.toggleTitle':       { en: 'Switch to dark mode',                       fr: 'Passer en mode sombre' },
+  'theme.toggleDarkTitle':   { en: 'Switch to light mode',                      fr: 'Passer en mode clair' },
+
+  // Auth pages
+  'auth.appName':            { en: 'Forest BD Viewer',                          fr: 'Forest BD Viewer' },
+  'auth.signIn':             { en: 'Sign in',                                   fr: 'Se connecter' },
+  'auth.signingIn':          { en: 'Signing in\u2026',                          fr: 'Connexion\u2026' },
+  'auth.email':              { en: 'Email',                                     fr: 'Email' },
+  'auth.password':           { en: 'Password',                                  fr: 'Mot de passe' },
+  'auth.name':               { en: 'Name',                                      fr: 'Nom' },
+  'auth.noAccount':          { en: 'No account?',                               fr: 'Pas de compte ?' },
+  'auth.register':           { en: 'Register',                                  fr: "S'inscrire" },
+  'auth.createAccount':      { en: 'Create account',                            fr: 'Créer un compte' },
+  'auth.creatingAccount':    { en: 'Creating account\u2026',                    fr: 'Création du compte\u2026' },
+  'auth.hasAccount':         { en: 'Already have an account?',                  fr: 'Déjà un compte ?' },
+  'auth.signInLink':         { en: 'Sign in',                                   fr: 'Se connecter' },
+  'auth.signOut':            { en: 'Sign out',                                  fr: 'Déconnexion' },
+
   // LiDAR CHM analysis
   'lidar.section':           { en: 'Canopy Height Model (LiDAR)',              fr: 'Modèle de Hauteur de Canopée (LiDAR)' },
   'lidar.loading':           { en: 'Analysing LiDAR data...',                  fr: 'Analyse des données LiDAR...' },

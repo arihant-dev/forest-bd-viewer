@@ -412,11 +412,11 @@ export default function Map() {
         popup.current = new mapboxgl.Popup({ closeButton: true, maxWidth: '280px' })
           .setLngLat(e.lngLat)
           .setHTML(
-            `<div style="font-family:sans-serif;font-size:13px;line-height:1.6">
+            `<div style="font-family:var(--font-sans);font-size:13px;line-height:1.6;color:var(--color-text)">
               <strong>${displayName}</strong><br/>
-              <span style="color:#555">${tRef.current('popup.tfvCode')}:</span> ${codeTfv}<br/>
-              <span style="color:#555">${tRef.current('popup.mainSpecies')}:</span> ${essence1}<br/>
-              <span style="color:#555">${tRef.current('popup.department')}:</span> ${dept}
+              <span style="color:var(--color-text-dim)">${tRef.current('popup.tfvCode')}:</span> ${codeTfv}<br/>
+              <span style="color:var(--color-text-dim)">${tRef.current('popup.mainSpecies')}:</span> ${essence1}<br/>
+              <span style="color:var(--color-text-dim)">${tRef.current('popup.department')}:</span> ${dept}
             </div>`
           )
           .addTo(m);
@@ -435,11 +435,11 @@ export default function Map() {
         popup.current = new mapboxgl.Popup({ closeButton: true, maxWidth: '240px' })
           .setLngLat(e.lngLat)
           .setHTML(
-            `<div style="font-family:sans-serif;font-size:13px;line-height:1.6">
+            `<div style="font-family:var(--font-sans);font-size:13px;line-height:1.6;color:var(--color-text)">
               <strong>${tRef.current('popup.cadastreTitle')}</strong><br/>
-              <span style="color:#555">${tRef.current('popup.section')}:</span> ${section}<br/>
-              <span style="color:#555">${tRef.current('popup.number')}:</span> ${numero}<br/>
-              <span style="color:#555">${tRef.current('popup.municipality')}:</span> ${commune}
+              <span style="color:var(--color-text-dim)">${tRef.current('popup.section')}:</span> ${section}<br/>
+              <span style="color:var(--color-text-dim)">${tRef.current('popup.number')}:</span> ${numero}<br/>
+              <span style="color:var(--color-text-dim)">${tRef.current('popup.municipality')}:</span> ${commune}
             </div>`
           )
           .addTo(m);
@@ -655,7 +655,7 @@ export default function Map() {
             {tier === 'cadastre' && (
               <div
                 className={styles.legendItem}
-                style={{ marginTop: 6, borderTop: '1px solid #eee', paddingTop: 6 }}
+                style={{ marginTop: 6, borderTop: '1px solid var(--color-border-subtle)', paddingTop: 6 }}
               >
                 <span
                   className={styles.legendSwatch}

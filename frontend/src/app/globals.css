@@ -1,17 +1,91 @@
 :root {
+  /* ── Primary palette ── */
   --color-primary: #2d6a4f;
   --color-primary-light: #40916c;
+  --color-primary-dark: #1b4332;
+  --color-accent: #166534;
+
+  /* ── Backgrounds ── */
   --color-bg: #fafafa;
+  --color-bg-auth: #f3f4f6;
+  --color-bg-muted: #f0f0f0;
   --color-surface: #ffffff;
+  --color-surface-translucent: rgba(255, 255, 255, 0.95);
+  --color-surface-elevated: rgba(255, 255, 255, 0.92);
+  --color-surface-panel: rgba(255, 255, 255, 0.96);
+  --color-overlay-bg: rgba(255, 255, 255, 0.9);
+
+  /* ── Text ── */
   --color-text: #1a1a1a;
+  --color-text-strong: #111827;
+  --color-text-secondary: #374151;
+  --color-text-dim: #555555;
   --color-text-muted: #6b7280;
+  --color-text-icon: #777777;
+
+  /* ── Borders ── */
   --color-border: #e5e7eb;
+  --color-border-medium: #d1d5db;
+  --color-border-light: #e0e0e0;
+  --color-border-subtle: #eeeeee;
+
+  /* ── Semantic ── */
+  --color-error: #c0392b;
+  --color-error-hover: #a93226;
+  --color-cover-track: #e8f5e9;
+  --color-cover-gradient-start: #2d9e55;
+  --color-cover-gradient-end: #52b788;
+
+  /* ── Typography, shadows, motion ── */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.08);
+  --shadow-popup: 0 2px 8px rgba(0, 0, 0, 0.12);
   --radius: 8px;
   --transition: 200ms ease;
+}
+
+/* ── Dark theme (forest-at-dusk palette) ── */
+[data-theme="dark"] {
+  --color-primary: #52b788;
+  --color-primary-light: #74c69d;
+  --color-primary-dark: #40916c;
+  --color-accent: #52b788;
+
+  --color-bg: #0f1a14;
+  --color-bg-auth: #0d1510;
+  --color-bg-muted: #1e2e26;
+  --color-surface: #1a2b22;
+  --color-surface-translucent: rgba(26, 43, 34, 0.95);
+  --color-surface-elevated: rgba(26, 43, 34, 0.92);
+  --color-surface-panel: rgba(26, 43, 34, 0.96);
+  --color-overlay-bg: rgba(15, 26, 20, 0.92);
+
+  --color-text: #e1e8e3;
+  --color-text-strong: #f0f4f1;
+  --color-text-secondary: #b0bfb5;
+  --color-text-dim: #8b9a8f;
+  --color-text-muted: #6e7f73;
+  --color-text-icon: #8b9a8f;
+
+  --color-border: #2d3f34;
+  --color-border-medium: #344a3b;
+  --color-border-light: #3a4f42;
+  --color-border-subtle: #263830;
+
+  --color-error: #f87171;
+  --color-error-hover: #ef4444;
+  --color-cover-track: #1a3325;
+  --color-cover-gradient-start: #40916c;
+  --color-cover-gradient-end: #52b788;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.3);
+  --shadow-popup: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 * {
@@ -29,4 +103,45 @@ body {
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Theme switching transitions ── */
+html,
+body,
+html * {
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+/* Exclude Mapbox elements from theme transition (prevents flicker) */
+.mapboxgl-map,
+.mapboxgl-map *,
+.mapboxgl-canvas,
+canvas {
+  transition: none !important;
+}
+
+/* ── Mapbox popup dark mode ── */
+.mapboxgl-popup-content {
+  background: var(--color-surface) !important;
+  color: var(--color-text) !important;
+  box-shadow: var(--shadow-popup) !important;
+  border-radius: var(--radius) !important;
+}
+
+.mapboxgl-popup-tip {
+  border-top-color: var(--color-surface) !important;
+}
+
+/* ── Input focus ring ── */
+input:focus {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 2px rgba(45, 106, 79, 0.15);
+}
+
+[data-theme="dark"] input:focus {
+  box-shadow: 0 0 0 2px rgba(82, 183, 136, 0.2);
 }
