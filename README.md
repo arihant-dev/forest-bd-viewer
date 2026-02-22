@@ -17,6 +17,7 @@ Authenticated users can:
 - **Analyze** custom areas by drawing polygons — get forest cover stats, TFV breakdown, and species composition
 - **LiDAR CHM analysis** — compute Canopy Height Model from IGN LIDAR HD data with map overlay (where coverage exists)
 - **Switch language** between English (default) and French
+- **Toggle dark mode** with a forest-at-dusk color palette, persisted in localStorage
 
 ---
 
@@ -33,6 +34,7 @@ Authenticated users can:
 | Cache | Redis 7 (MVT tile cache, 24h/7d TTL) |
 | Auth | JWT (HS256) via httpOnly cookie |
 | i18n | Context-based EN/FR dictionary |
+| Theming | CSS custom properties, light/dark mode with localStorage persistence |
 | Infrastructure | Docker Compose (4 services) |
 
 ### Data Flow
@@ -46,6 +48,7 @@ graph LR
         Draw[mapbox-gl-draw<br/>Polygon tool]
         Redux[Redux Toolkit<br/>auth · map · analysis]
         I18n[i18n Context<br/>EN / FR]
+        Theme[Theme Context<br/>Light / Dark]
     end
 
     subgraph Backend["Backend — Go / Echo"]
