@@ -84,7 +84,10 @@ func (h *Handler) serveTile(c echo.Context, cacheKey string, ttl time.Duration,
 	if storeBytes == nil {
 		storeBytes = []byte{}
 	}
-	_ = h.redis.Set(context.Background(), cacheKey, storeBytes, ttl).Err()
+	if err := h.redis.Set(ctx, cacheKey, storeBytes, ttl).Err(); err != nil {
+		// Log cache write failure but don't fail the request
+		c.Logger().Warnf("failed to cache tile %s: %v", cacheKey, err)
+	}
 
 	if len(tile) == 0 {
 		return c.NoContent(http.StatusNoContent)

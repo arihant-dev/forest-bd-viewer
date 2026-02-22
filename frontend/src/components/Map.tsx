@@ -540,8 +540,8 @@ export default function Map() {
             paint: { 'raster-opacity': 0.6 },
           });
         }
-      } catch (err) {
-        console.error('CHM overlay: failed to add source/layer', err);
+      } catch {
+        // CHM overlay source/layer failure is non-critical; silently ignore
       }
     } else {
       // Remove overlay when no coverage or cleared
