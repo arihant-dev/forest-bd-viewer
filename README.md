@@ -209,7 +209,11 @@ When a polygon is drawn, the backend also queries IGN's LIDAR HD tile index for 
 
 ### Internationalization
 
-The UI defaults to English. Click the language toggle (top of sidebar) to switch to French. All UI labels, legend items, popups, and analysis results are translated.
+The UI defaults to English. Click the language toggle (top-right toolbar) to switch to French. All UI labels, legend items, popups, and analysis results are translated.
+
+### Dark Mode
+
+Click the moon/sun icon in the top-right toolbar to toggle between light and dark themes. The dark palette uses a forest-at-dusk green scheme. Theme preference is persisted in `localStorage` and restored on page load with no flash of incorrect theme. The toggle is available on the main map page, login page, and registration page.
 
 ### TFV Code Normalization
 
@@ -262,7 +266,8 @@ forest_bd_viewer/
 │   │   │   └── AnalysisPanel.tsx   # Polygon analysis results
 │   │   ├── lib/
 │   │   │   ├── graphql.ts          # GraphQL client (credentials: include)
-│   │   │   └── i18n.tsx            # EN/FR dictionary + React context
+│   │   │   ├── i18n.tsx            # EN/FR dictionary + React context
+│   │   │   └── theme.tsx           # Dark/light theme provider + localStorage
 │   │   └── store/                  # Redux slices (auth, map, analysis)
 │   └── Dockerfile
 ├── scripts/
