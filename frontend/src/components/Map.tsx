@@ -10,6 +10,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { setMapState, saveMapStateThunk } from '@/store/mapSlice';
 import { startDrawing, clearAnalysis, analyzePolygonThunk, analyzeLidarThunk } from '@/store/analysisSlice';
 import { useI18n, type DictKey } from '@/lib/i18n';
+import { useTheme } from '@/lib/theme';
 import AnalysisPanel from './AnalysisPanel';
 
 // ── BD Forêt V2 classification ────────────────────────────────────────────────
@@ -75,6 +76,13 @@ function zoomTier(zoom: number): ZoomTier {
   return 'cadastre';
 }
 
+// ── Mapbox style URLs ─────────────────────────────────────────────────────────
+
+const MAPBOX_STYLES = {
+  light: 'mapbox://styles/mapbox/light-v11',
+  dark: 'mapbox://styles/mapbox/dark-v11',
+} as const;
+
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -86,6 +94,7 @@ export default function Map() {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [currentZoom, setCurrentZoom] = useState(6);
+  const [styleReady, setStyleReady] = useState(0);
 
   const dispatch = useAppDispatch();
   const { center, zoom: savedZoom, hydrated } = useAppSelector((s) => s.map);
@@ -93,12 +102,19 @@ export default function Map() {
   const analysisStatus = useAppSelector((s) => s.analysis.status);
   const lidarResult = useAppSelector((s) => s.analysis.lidarResult);
   const { t } = useI18n();
+  const { theme } = useTheme();
 
   // Refs so map event handlers (set up once) always see the latest values
   const tRef = useRef(t);
   tRef.current = t;
   const analysisStatusRef = useRef(analysisStatus);
   analysisStatusRef.current = analysisStatus;
+
+  // Persist analysis polygon GeoJSON across style changes
+  const analysisPolygonRef = useRef<GeoJSON.Feature | null>(null);
+  const appliedStyleRef = useRef<string | null>(null);
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
   // ── Static polygon helpers ──────────────────────────────────────────────
 
@@ -111,6 +127,7 @@ export default function Map() {
     // Also remove CHM overlay
     if (m.getLayer('chm-overlay-layer')) m.removeLayer('chm-overlay-layer');
     if (m.getSource('chm-overlay')) m.removeSource('chm-overlay');
+    analysisPolygonRef.current = null;
   }, []);
 
   // ── Draw control handlers ─────────────────────────────────────────────────
@@ -146,6 +163,299 @@ export default function Map() {
     removeStaticPolygon();
   }, [removeStaticPolygon]);
 
+  // ── Setup custom tile sources, layers, and event handlers ─────────────────
+  // Called on initial style load and after theme-driven style changes.
+  const setupCustomLayers = useCallback((m: mapboxgl.Map) => {
+    // ── Sources ───────────────────────────────────────────────────────
+    if (!m.getSource('regions')) {
+      m.addSource('regions', {
+        type: 'vector',
+        tiles: [`${apiUrl}/tiles/admin/regions/{z}/{x}/{y}.mvt`],
+        minzoom: 0,
+        maxzoom: 8,
+      });
+    }
+
+    if (!m.getSource('departements')) {
+      m.addSource('departements', {
+        type: 'vector',
+        tiles: [`${apiUrl}/tiles/admin/departements/{z}/{x}/{y}.mvt`],
+        minzoom: 6,
+        maxzoom: 12,
+      });
+    }
+
+    if (!m.getSource('communes')) {
+      m.addSource('communes', {
+        type: 'vector',
+        tiles: [`${apiUrl}/tiles/admin/communes/{z}/{x}/{y}.mvt`],
+        minzoom: 9,
+        maxzoom: 15,
+      });
+    }
+
+    if (!m.getSource('foret')) {
+      m.addSource('foret', {
+        type: 'vector',
+        tiles: [`${apiUrl}/tiles/foret/{z}/{x}/{y}.mvt`],
+        minzoom: 8,
+        maxzoom: 16,
+      });
+    }
+
+    if (!m.getSource('cadastre')) {
+      m.addSource('cadastre', {
+        type: 'vector',
+        tiles: [`${apiUrl}/tiles/cadastre/{z}/{x}/{y}.mvt`],
+        minzoom: 14,
+        maxzoom: 18,
+      });
+    }
+
+    // ── Regions (zoom 5–7) ────────────────────────────────────────────
+    if (!m.getLayer('regions-fill')) {
+      m.addLayer({
+        id: 'regions-fill',
+        type: 'fill',
+        source: 'regions',
+        'source-layer': 'regions',
+        minzoom: 5,
+        maxzoom: 8,
+        paint: { 'fill-color': '#4a90d9', 'fill-opacity': 0.12 },
+      });
+    }
+    if (!m.getLayer('regions-outline')) {
+      m.addLayer({
+        id: 'regions-outline',
+        type: 'line',
+        source: 'regions',
+        'source-layer': 'regions',
+        minzoom: 5,
+        maxzoom: 8,
+        paint: { 'line-color': '#1a5fa8', 'line-width': 1.5, 'line-opacity': 0.7 },
+      });
+    }
+
+    // ── Departments (zoom 8–10) ───────────────────────────────────────
+    if (!m.getLayer('departements-fill')) {
+      m.addLayer({
+        id: 'departements-fill',
+        type: 'fill',
+        source: 'departements',
+        'source-layer': 'departements',
+        minzoom: 8,
+        maxzoom: 11,
+        paint: { 'fill-color': '#7b5ea7', 'fill-opacity': 0.12 },
+      });
+    }
+    if (!m.getLayer('departements-outline')) {
+      m.addLayer({
+        id: 'departements-outline',
+        type: 'line',
+        source: 'departements',
+        'source-layer': 'departements',
+        minzoom: 8,
+        maxzoom: 11,
+        paint: { 'line-color': '#5a3f8a', 'line-width': 1.5, 'line-opacity': 0.7 },
+      });
+    }
+
+    // ── Communes (zoom 11–13) ─────────────────────────────────────────
+    if (!m.getLayer('communes-fill')) {
+      m.addLayer({
+        id: 'communes-fill',
+        type: 'fill',
+        source: 'communes',
+        'source-layer': 'communes',
+        minzoom: 11,
+        maxzoom: 14,
+        paint: { 'fill-color': '#f0a500', 'fill-opacity': 0.08 },
+      });
+    }
+    if (!m.getLayer('communes-outline')) {
+      m.addLayer({
+        id: 'communes-outline',
+        type: 'line',
+        source: 'communes',
+        'source-layer': 'communes',
+        minzoom: 11,
+        maxzoom: 14,
+        paint: { 'line-color': '#c87800', 'line-width': 0.8, 'line-opacity': 0.6 },
+      });
+    }
+
+    // ── BD Forêt (zoom 14+) ───────────────────────────────────────────
+    if (!m.getLayer('foret-fill')) {
+      m.addLayer({
+        id: 'foret-fill',
+        type: 'fill',
+        source: 'foret',
+        'source-layer': 'forest',
+        minzoom: 14,
+        paint: { 'fill-color': buildColorExpression(), 'fill-opacity': 0.7 },
+      });
+    }
+    if (!m.getLayer('foret-outline')) {
+      m.addLayer({
+        id: 'foret-outline',
+        type: 'line',
+        source: 'foret',
+        'source-layer': 'forest',
+        minzoom: 14,
+        paint: { 'line-color': '#2d6a4f', 'line-width': 0.5, 'line-opacity': 0.4 },
+      });
+    }
+
+    // ── Cadastre parcelles (zoom 15+) ─────────────────────────────────
+    if (!m.getLayer('cadastre-fill')) {
+      m.addLayer({
+        id: 'cadastre-fill',
+        type: 'fill',
+        source: 'cadastre',
+        'source-layer': 'cadastre',
+        minzoom: 15,
+        paint: { 'fill-color': '#e8c97a', 'fill-opacity': 0.2 },
+      });
+    }
+    if (!m.getLayer('cadastre-outline')) {
+      m.addLayer({
+        id: 'cadastre-outline',
+        type: 'line',
+        source: 'cadastre',
+        'source-layer': 'cadastre',
+        minzoom: 15,
+        paint: { 'line-color': '#b8860b', 'line-width': 0.7, 'line-opacity': 0.7 },
+      });
+    }
+
+    // ── Pointer cursors ───────────────────────────────────────────────
+    const interactiveLayers = [
+      'regions-fill', 'departements-fill', 'communes-fill',
+      'foret-fill', 'cadastre-fill',
+    ];
+    for (const layerId of interactiveLayers) {
+      m.on('mouseenter', layerId, () => { m.getCanvas().style.cursor = 'pointer'; });
+      m.on('mouseleave', layerId, () => { m.getCanvas().style.cursor = ''; });
+    }
+
+    // ── Click: Region → zoom to region ───────────────────────────────
+    m.on('click', 'regions-fill', (e) => {
+      if (analysisStatusRef.current === 'drawing') return;
+      if (!e.features || e.features.length === 0) return;
+      const feat = e.features[0];
+      const nom: string = feat.properties?.nom ?? tRef.current('popup.region');
+      if (feat.geometry) {
+        m.fitBounds(geometryBounds(feat.geometry as GeoJSON.Geometry), { padding: 40 });
+      }
+      popup.current?.remove();
+      popup.current = new mapboxgl.Popup({ closeButton: false })
+        .setLngLat(e.lngLat)
+        .setHTML(`<strong>${nom}</strong>`)
+        .addTo(m);
+      window.setTimeout(() => popup.current?.remove(), 1500);
+    });
+
+    // ── Click: Department → zoom to department ────────────────────────
+    m.on('click', 'departements-fill', (e) => {
+      if (analysisStatusRef.current === 'drawing') return;
+      if (!e.features || e.features.length === 0) return;
+      const feat = e.features[0];
+      const nom: string = feat.properties?.nom ?? tRef.current('popup.department');
+      if (feat.geometry) {
+        m.fitBounds(geometryBounds(feat.geometry as GeoJSON.Geometry), { padding: 40 });
+      }
+      popup.current?.remove();
+      popup.current = new mapboxgl.Popup({ closeButton: false })
+        .setLngLat(e.lngLat)
+        .setHTML(`<strong>${nom}</strong>`)
+        .addTo(m);
+      window.setTimeout(() => popup.current?.remove(), 1500);
+    });
+
+    // ── Click: Commune → zoom to commune ─────────────────────────────
+    m.on('click', 'communes-fill', (e) => {
+      if (analysisStatusRef.current === 'drawing') return;
+      if (!e.features || e.features.length === 0) return;
+      const feat = e.features[0];
+      const nom: string = feat.properties?.nom ?? tRef.current('popup.municipality');
+      if (feat.geometry) {
+        m.fitBounds(geometryBounds(feat.geometry as GeoJSON.Geometry), { padding: 40 });
+      }
+      popup.current?.remove();
+      popup.current = new mapboxgl.Popup({ closeButton: false })
+        .setLngLat(e.lngLat)
+        .setHTML(`<strong>${nom}</strong>`)
+        .addTo(m);
+      window.setTimeout(() => popup.current?.remove(), 1500);
+    });
+
+    // ── Click: BD Forêt → feature popup ──────────────────────────────
+    m.on('click', 'foret-fill', (e) => {
+      if (analysisStatusRef.current === 'drawing') return;
+      if (!e.features || e.features.length === 0) return;
+      const props = e.features[0].properties ?? {};
+      const codeTfv: string = props.code_tfv ?? '—';
+      const libTfv: string = props.lib_tfv ?? '—';
+      const translated = tRef.current(`tfv.${codeTfv}` as DictKey);
+      const displayName = translated.startsWith('tfv.') ? libTfv : translated;
+      const essence1: string = props.essence1 ?? '—';
+      const dept: string = props.departement ?? '—';
+
+      popup.current?.remove();
+      popup.current = new mapboxgl.Popup({ closeButton: true, maxWidth: '280px' })
+        .setLngLat(e.lngLat)
+        .setHTML(
+          `<div style="font-family:var(--font-sans);font-size:13px;line-height:1.6;color:var(--color-text)">
+            <strong>${displayName}</strong><br/>
+            <span style="color:var(--color-text-dim)">${tRef.current('popup.tfvCode')}:</span> ${codeTfv}<br/>
+            <span style="color:var(--color-text-dim)">${tRef.current('popup.mainSpecies')}:</span> ${essence1}<br/>
+            <span style="color:var(--color-text-dim)">${tRef.current('popup.department')}:</span> ${dept}
+          </div>`
+        )
+        .addTo(m);
+    });
+
+    // ── Click: Cadastre → parcel popup ────────────────────────────────
+    m.on('click', 'cadastre-fill', (e) => {
+      if (analysisStatusRef.current === 'drawing') return;
+      if (!e.features || e.features.length === 0) return;
+      const props = e.features[0].properties ?? {};
+      const section: string = props.section ?? '—';
+      const numero: string = props.numero ?? '—';
+      const commune: string = props.commune ?? '—';
+
+      popup.current?.remove();
+      popup.current = new mapboxgl.Popup({ closeButton: true, maxWidth: '240px' })
+        .setLngLat(e.lngLat)
+        .setHTML(
+          `<div style="font-family:var(--font-sans);font-size:13px;line-height:1.6;color:var(--color-text)">
+            <strong>${tRef.current('popup.cadastreTitle')}</strong><br/>
+            <span style="color:var(--color-text-dim)">${tRef.current('popup.section')}:</span> ${section}<br/>
+            <span style="color:var(--color-text-dim)">${tRef.current('popup.number')}:</span> ${numero}<br/>
+            <span style="color:var(--color-text-dim)">${tRef.current('popup.municipality')}:</span> ${commune}
+          </div>`
+        )
+        .addTo(m);
+    });
+
+    // ── Re-add analysis polygon if it existed before the style change ──
+    if (analysisPolygonRef.current && !m.getSource('analysis-polygon')) {
+      m.addSource('analysis-polygon', { type: 'geojson', data: analysisPolygonRef.current });
+      m.addLayer({
+        id: 'analysis-polygon-fill',
+        type: 'fill',
+        source: 'analysis-polygon',
+        paint: { 'fill-color': '#3388ff', 'fill-opacity': 0.15 },
+      });
+      m.addLayer({
+        id: 'analysis-polygon-outline',
+        type: 'line',
+        source: 'analysis-polygon',
+        paint: { 'line-color': '#3388ff', 'line-width': 2, 'line-dasharray': [2, 2] },
+      });
+    }
+  }, [apiUrl, dispatch]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!hydrated) return;
     if (map.current || !mapContainer.current) return;
@@ -156,13 +466,14 @@ export default function Map() {
       return;
     }
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-
     mapboxgl.accessToken = token;
+
+    const initialStyle = MAPBOX_STYLES[theme] ?? MAPBOX_STYLES.light;
+    appliedStyleRef.current = initialStyle;
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/light-v11',
+      style: initialStyle,
       center: center,
       zoom: savedZoom,
       attributionControl: true,
@@ -200,250 +511,16 @@ export default function Map() {
       }, 1000);
     });
 
+    // Re-add custom layers whenever the style finishes loading.
+    // Fires on initial load and after every setStyle() call (theme changes).
+    map.current.on('style.load', () => {
+      if (!map.current) return;
+      setupCustomLayers(map.current);
+      setStyleReady((prev) => prev + 1);
+    });
+
     map.current.on('load', () => {
       const m = map.current!;
-
-      // ── Sources ───────────────────────────────────────────────────────
-      m.addSource('regions', {
-        type: 'vector',
-        tiles: [`${apiUrl}/tiles/admin/regions/{z}/{x}/{y}.mvt`],
-        minzoom: 0,
-        maxzoom: 8,
-      });
-
-      m.addSource('departements', {
-        type: 'vector',
-        tiles: [`${apiUrl}/tiles/admin/departements/{z}/{x}/{y}.mvt`],
-        minzoom: 6,
-        maxzoom: 12,
-      });
-
-      m.addSource('communes', {
-        type: 'vector',
-        tiles: [`${apiUrl}/tiles/admin/communes/{z}/{x}/{y}.mvt`],
-        minzoom: 9,
-        maxzoom: 15,
-      });
-
-      m.addSource('foret', {
-        type: 'vector',
-        tiles: [`${apiUrl}/tiles/foret/{z}/{x}/{y}.mvt`],
-        minzoom: 8,
-        maxzoom: 16,
-      });
-
-      m.addSource('cadastre', {
-        type: 'vector',
-        tiles: [`${apiUrl}/tiles/cadastre/{z}/{x}/{y}.mvt`],
-        minzoom: 14,
-        maxzoom: 18,
-      });
-
-      // ── Regions (zoom 5–7) ────────────────────────────────────────────
-      m.addLayer({
-        id: 'regions-fill',
-        type: 'fill',
-        source: 'regions',
-        'source-layer': 'regions',
-        minzoom: 5,
-        maxzoom: 8,
-        paint: { 'fill-color': '#4a90d9', 'fill-opacity': 0.12 },
-      });
-      m.addLayer({
-        id: 'regions-outline',
-        type: 'line',
-        source: 'regions',
-        'source-layer': 'regions',
-        minzoom: 5,
-        maxzoom: 8,
-        paint: { 'line-color': '#1a5fa8', 'line-width': 1.5, 'line-opacity': 0.7 },
-      });
-
-      // ── Departments (zoom 8–10) ───────────────────────────────────────
-      m.addLayer({
-        id: 'departements-fill',
-        type: 'fill',
-        source: 'departements',
-        'source-layer': 'departements',
-        minzoom: 8,
-        maxzoom: 11,
-        paint: { 'fill-color': '#7b5ea7', 'fill-opacity': 0.12 },
-      });
-      m.addLayer({
-        id: 'departements-outline',
-        type: 'line',
-        source: 'departements',
-        'source-layer': 'departements',
-        minzoom: 8,
-        maxzoom: 11,
-        paint: { 'line-color': '#5a3f8a', 'line-width': 1.5, 'line-opacity': 0.7 },
-      });
-
-      // ── Communes (zoom 11–13) ─────────────────────────────────────────
-      m.addLayer({
-        id: 'communes-fill',
-        type: 'fill',
-        source: 'communes',
-        'source-layer': 'communes',
-        minzoom: 11,
-        maxzoom: 14,
-        paint: { 'fill-color': '#f0a500', 'fill-opacity': 0.08 },
-      });
-      m.addLayer({
-        id: 'communes-outline',
-        type: 'line',
-        source: 'communes',
-        'source-layer': 'communes',
-        minzoom: 11,
-        maxzoom: 14,
-        paint: { 'line-color': '#c87800', 'line-width': 0.8, 'line-opacity': 0.6 },
-      });
-
-      // ── BD Forêt (zoom 14+) ───────────────────────────────────────────
-      m.addLayer({
-        id: 'foret-fill',
-        type: 'fill',
-        source: 'foret',
-        'source-layer': 'forest',
-        minzoom: 14,
-        paint: { 'fill-color': buildColorExpression(), 'fill-opacity': 0.7 },
-      });
-      m.addLayer({
-        id: 'foret-outline',
-        type: 'line',
-        source: 'foret',
-        'source-layer': 'forest',
-        minzoom: 14,
-        paint: { 'line-color': '#2d6a4f', 'line-width': 0.5, 'line-opacity': 0.4 },
-      });
-
-      // ── Cadastre parcelles (zoom 15+) ─────────────────────────────────
-      m.addLayer({
-        id: 'cadastre-fill',
-        type: 'fill',
-        source: 'cadastre',
-        'source-layer': 'cadastre',
-        minzoom: 15,
-        paint: { 'fill-color': '#e8c97a', 'fill-opacity': 0.2 },
-      });
-      m.addLayer({
-        id: 'cadastre-outline',
-        type: 'line',
-        source: 'cadastre',
-        'source-layer': 'cadastre',
-        minzoom: 15,
-        paint: { 'line-color': '#b8860b', 'line-width': 0.7, 'line-opacity': 0.7 },
-      });
-
-      // ── Pointer cursors ───────────────────────────────────────────────
-      const interactiveLayers = [
-        'regions-fill', 'departements-fill', 'communes-fill',
-        'foret-fill', 'cadastre-fill',
-      ];
-      for (const layerId of interactiveLayers) {
-        m.on('mouseenter', layerId, () => { m.getCanvas().style.cursor = 'pointer'; });
-        m.on('mouseleave', layerId, () => { m.getCanvas().style.cursor = ''; });
-      }
-
-      // ── Click: Region → zoom to region ───────────────────────────────
-      m.on('click', 'regions-fill', (e) => {
-        if (analysisStatusRef.current === 'drawing') return;
-        if (!e.features || e.features.length === 0) return;
-        const feat = e.features[0];
-        const nom: string = feat.properties?.nom ?? tRef.current('popup.region');
-        if (feat.geometry) {
-          m.fitBounds(geometryBounds(feat.geometry as GeoJSON.Geometry), { padding: 40 });
-        }
-        popup.current?.remove();
-        popup.current = new mapboxgl.Popup({ closeButton: false })
-          .setLngLat(e.lngLat)
-          .setHTML(`<strong>${nom}</strong>`)
-          .addTo(m);
-        window.setTimeout(() => popup.current?.remove(), 1500);
-      });
-
-      // ── Click: Department → zoom to department ────────────────────────
-      m.on('click', 'departements-fill', (e) => {
-        if (analysisStatusRef.current === 'drawing') return;
-        if (!e.features || e.features.length === 0) return;
-        const feat = e.features[0];
-        const nom: string = feat.properties?.nom ?? tRef.current('popup.department');
-        if (feat.geometry) {
-          m.fitBounds(geometryBounds(feat.geometry as GeoJSON.Geometry), { padding: 40 });
-        }
-        popup.current?.remove();
-        popup.current = new mapboxgl.Popup({ closeButton: false })
-          .setLngLat(e.lngLat)
-          .setHTML(`<strong>${nom}</strong>`)
-          .addTo(m);
-        window.setTimeout(() => popup.current?.remove(), 1500);
-      });
-
-      // ── Click: Commune → zoom to commune ─────────────────────────────
-      m.on('click', 'communes-fill', (e) => {
-        if (analysisStatusRef.current === 'drawing') return;
-        if (!e.features || e.features.length === 0) return;
-        const feat = e.features[0];
-        const nom: string = feat.properties?.nom ?? tRef.current('popup.municipality');
-        if (feat.geometry) {
-          m.fitBounds(geometryBounds(feat.geometry as GeoJSON.Geometry), { padding: 40 });
-        }
-        popup.current?.remove();
-        popup.current = new mapboxgl.Popup({ closeButton: false })
-          .setLngLat(e.lngLat)
-          .setHTML(`<strong>${nom}</strong>`)
-          .addTo(m);
-        window.setTimeout(() => popup.current?.remove(), 1500);
-      });
-
-      // ── Click: BD Forêt → feature popup ──────────────────────────────
-      m.on('click', 'foret-fill', (e) => {
-        if (analysisStatusRef.current === 'drawing') return;
-        if (!e.features || e.features.length === 0) return;
-        const props = e.features[0].properties ?? {};
-        const codeTfv: string = props.code_tfv ?? '—';
-        const libTfv: string = props.lib_tfv ?? '—';
-        const translated = tRef.current(`tfv.${codeTfv}` as DictKey);
-        const displayName = translated.startsWith('tfv.') ? libTfv : translated;
-        const essence1: string = props.essence1 ?? '—';
-        const dept: string = props.departement ?? '—';
-
-        popup.current?.remove();
-        popup.current = new mapboxgl.Popup({ closeButton: true, maxWidth: '280px' })
-          .setLngLat(e.lngLat)
-          .setHTML(
-            `<div style="font-family:var(--font-sans);font-size:13px;line-height:1.6;color:var(--color-text)">
-              <strong>${displayName}</strong><br/>
-              <span style="color:var(--color-text-dim)">${tRef.current('popup.tfvCode')}:</span> ${codeTfv}<br/>
-              <span style="color:var(--color-text-dim)">${tRef.current('popup.mainSpecies')}:</span> ${essence1}<br/>
-              <span style="color:var(--color-text-dim)">${tRef.current('popup.department')}:</span> ${dept}
-            </div>`
-          )
-          .addTo(m);
-      });
-
-      // ── Click: Cadastre → parcel popup ────────────────────────────────
-      m.on('click', 'cadastre-fill', (e) => {
-        if (analysisStatusRef.current === 'drawing') return;
-        if (!e.features || e.features.length === 0) return;
-        const props = e.features[0].properties ?? {};
-        const section: string = props.section ?? '—';
-        const numero: string = props.numero ?? '—';
-        const commune: string = props.commune ?? '—';
-
-        popup.current?.remove();
-        popup.current = new mapboxgl.Popup({ closeButton: true, maxWidth: '240px' })
-          .setLngLat(e.lngLat)
-          .setHTML(
-            `<div style="font-family:var(--font-sans);font-size:13px;line-height:1.6;color:var(--color-text)">
-              <strong>${tRef.current('popup.cadastreTitle')}</strong><br/>
-              <span style="color:var(--color-text-dim)">${tRef.current('popup.section')}:</span> ${section}<br/>
-              <span style="color:var(--color-text-dim)">${tRef.current('popup.number')}:</span> ${numero}<br/>
-              <span style="color:var(--color-text-dim)">${tRef.current('popup.municipality')}:</span> ${commune}
-            </div>`
-          )
-          .addTo(m);
-      });
 
       // ── Draw events ───────────────────────────────────────────────────
       // Fired when the user completes a polygon (Finish button or double-click).
@@ -462,6 +539,9 @@ export default function Map() {
         };
         draw.deleteAll();
         draw.changeMode('simple_select');
+
+        // Persist for re-creation after style changes
+        analysisPolygonRef.current = geojsonData;
 
         if (m.getSource('analysis-polygon')) {
           (m.getSource('analysis-polygon') as mapboxgl.GeoJSONSource).setData(geojsonData);
@@ -493,6 +573,19 @@ export default function Map() {
       drawRef.current = null;
     };
   }, [hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Theme-driven style switching ──────────────────────────────────────────
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !loaded) return;
+
+    const styleUrl = MAPBOX_STYLES[theme] ?? MAPBOX_STYLES.light;
+    if (appliedStyleRef.current === styleUrl) return;
+    appliedStyleRef.current = styleUrl;
+
+    m.setStyle(styleUrl);
+    // style.load handler (registered once in init) will re-add custom layers
+  }, [theme, loaded]);
 
   // ── CHM overlay management ──────────────────────────────────────────────
   useEffect(() => {
@@ -548,7 +641,7 @@ export default function Map() {
       if (m.getLayer(layerId)) m.removeLayer(layerId);
       if (m.getSource(sourceId)) m.removeSource(sourceId);
     }
-  }, [lidarResult]);
+  }, [lidarResult, styleReady]);
 
   const tier = zoomTier(currentZoom);
 
