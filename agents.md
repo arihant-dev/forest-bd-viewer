@@ -20,7 +20,7 @@ Full-stack geospatial application for visualizing French forest data (BD Forêt�
 | 3 | Forest Data Import & MVT Tiles | Complete |
 | 4 | Drill-down, Cadastre, Map State | Complete (tile endpoints, admin GraphQL queries, map state persistence) |
 | 5 | Polygon Analysis | Complete (analyzePolygon mutation, mapbox-gl-draw, AnalysisPanel) |
-| 6 | Internationalization & Polish | Complete (EN/FR, 70+ keys, language toggle) |
+| 6 | Internationalization & Polish | Complete (EN/FR, ~70 keys, language toggle, dark/light theme, CSS design tokens, animations) |
 | 7 | Bonus B — LiDAR CHM Analysis | Complete (analyzeLidar mutation, CHM overlay, pure Go GeoTIFF) |
 
 See `tasks.md` for the full task checklist.
@@ -37,6 +37,7 @@ See `tasks.md` for the full task checklist.
 | Cache | Redis 7 |
 | Auth | JWT (HS256) via httpOnly cookie `auth_token` |
 | i18n | React Context-based EN/FR dictionary (`src/lib/i18n.tsx`) |
+| Theming | CSS custom properties + React Context (`src/lib/theme.tsx`), light/dark modes |
 | Infrastructure | Docker Compose |
 
 ---
@@ -81,8 +82,10 @@ forest_bd_viewer/
 ├── frontend/
 │   ├── src/
 │   │   ├── app/
-│   │   │   ├── layout.tsx          # Root layout, StoreProvider wrapper
-│   │   │   └── page.tsx            # Home (dynamic import of Map, no SSR)
+│   │   │   ├── layout.tsx          # Root layout, StoreProvider wrapper, anti-flash theme script
+│   │   │   ├── page.tsx            # Home (dynamic import of Map, no SSR), top-right toolbar
+│   │   │   ├── login/page.tsx      # Login form, dark mode + i18n
+│   │   │   └── register/page.tsx   # Registration form, dark mode + i18n
 │   │   ├── components/
 │   │   │   ├── Map.tsx             # Mapbox GL map + MapboxDraw, client-side only
 │   │   │   ├── Map.module.css
@@ -90,12 +93,13 @@ forest_bd_viewer/
 │   │   │   └── AnalysisPanel.module.css
 │   │   ├── lib/graphql.ts          # graphql-request client (sends credentials)
 │   │   ├── lib/i18n.tsx            # EN/FR dictionary, I18nProvider, useI18n hook
+│   │   ├── lib/theme.tsx           # ThemeProvider, useTheme hook, localStorage persistence
 │   │   └── store/
 │   │       ├── index.ts            # Redux store (auth + map + analysis reducers)
 │   │       ├── authSlice.ts        # Auth state + fetchMe thunk
 │   │       ├── mapSlice.ts         # Map center/zoom state + fetchMapState/saveMapStateThunk
 │   │       ├── analysisSlice.ts    # Polygon analysis state + analyzePolygonThunk
-│   │       └── StoreProvider.tsx   # Client-side Redux Provider; dispatches fetchMe + fetchMapState
+│   │       └── StoreProvider.tsx   # Wraps Redux Provider + I18nProvider + ThemeProvider; dispatches fetchMe + fetchMapState
 │   ├── Dockerfile                  # Multi-stage: node:20-alpine, output: standalone
 │   └── next.config.ts              # output: 'standalone'
 ├── scripts/
@@ -356,9 +360,10 @@ type LidarAnalysis {
 The app uses a React Context-based dictionary pattern in `frontend/src/lib/i18n.tsx`.
 
 - **Default locale**: `en` (English). Toggle switches to `fr` (French).
-- **60+ translation keys** covering: analysis panel, draw buttons, legend labels, popup content, TFV classification names.
+- **~70 translation keys** covering: analysis panel, draw buttons, legend labels, popup content, TFV classification names, LiDAR stats, auth pages, theme toggles.
 - **Usage**: `const { t, locale, toggle } = useI18n()` — call `t('key.name')` for translated strings.
 - **Type-safe**: `DictKey` type ensures only valid keys are used at compile time.
+- **Language toggle button**: Rendered in the top-right toolbar on the main page (alongside user name, theme toggle, and sign out). On login/register pages, a circular `FR`/`EN` button is positioned at top-right.
 
 ### Map component i18n
 
@@ -368,6 +373,49 @@ Map event handlers run inside a `useEffect` that only fires once. To access the 
 
 1. Add the key to `dict` in `frontend/src/lib/i18n.tsx` with both `en` and `fr` values.
 2. Use `t('your.key')` in JSX or `tRef.current('your.key')` in map event handlers.
+
+---
+
+## Theming & Dark Mode
+
+The app supports light and dark themes via CSS custom properties and a React Context provider.
+
+### Architecture
+
+- **CSS variables**: `globals.css` defines 30+ semantic tokens in `:root` (light) and `[data-theme="dark"]` (dark). All colors, shadows, and borders are expressed as variables.
+- **ThemeProvider**: `frontend/src/lib/theme.tsx` provides `useTheme()` hook returning `{ theme, toggle }`. State is persisted to `localStorage('forest-bd-theme')`.
+- **DOM attribute**: Theme is applied by setting `data-theme="dark"` on `<html>`. CSS variable overrides cascade automatically.
+- **Anti-flash script**: An inline `<script>` in `layout.tsx` reads localStorage before React hydrates, preventing a flash of light theme on dark-mode reloads. `suppressHydrationWarning` is set on `<html>`.
+
+### Dark palette (forest-at-dusk)
+
+| Token | Light | Dark |
+|-------|-------|------|
+| `--color-bg` | `#fafafa` | `#0f1a14` |
+| `--color-surface` | `#ffffff` | `#1a2b22` |
+| `--color-primary` | `#2d6a4f` | `#52b788` |
+| `--color-text` | `#1a1a1a` | `#e1e8e3` |
+| `--color-border` | `#e5e7eb` | `#2d3f34` |
+| `--color-error` | `#c0392b` | `#f87171` |
+
+### Theme toggle locations
+
+- **Main page**: Top-right toolbar — moon/sun icon button between the language toggle and sign-out.
+- **Login/Register pages**: Fixed-position circular buttons at top-right (theme + language toggle pair).
+
+### Animations & transitions
+
+- **Theme switch**: 0.3s ease transition on `background-color`, `color`, `border-color`, `box-shadow` for all elements. Mapbox canvas is excluded (`transition: none !important`).
+- **Analysis panel**: Slides in from left (0.3s ease-out `translateX`), metrics fade up (0.4s).
+- **Bar fills**: Cover bar and breakdown bars use `cubic-bezier(0.4, 0, 0.2, 1)` deceleration easing.
+- **Draw buttons**: Hover lift (`translateY(-1px)` + shadow gain), active press-down.
+- **Mapbox popups**: Styled via global CSS overrides to respect theme variables.
+
+### Adding dark mode support to new components
+
+1. Use CSS variables (`var(--color-text)`, `var(--color-surface)`, etc.) instead of hardcoded hex values.
+2. For inline styles in React components, CSS variables work: `style={{ color: 'var(--color-text)' }}`.
+3. For CSS modules, reference the same variables. No additional `[data-theme="dark"]` selectors are needed — the variable values change automatically.
 
 ---
 

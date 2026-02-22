@@ -57,7 +57,19 @@
 - [x] Language toggle (EN/FR)
 - [x] README with full setup guide, data pipeline, API reference, troubleshooting
 - [x] agents.md updated with i18n, TFV normalization, polygon UX docs
-- [ ] Polish UI, dark theme, animations
+- [x] Polish UI, dark theme, animations
+  - [x] CSS design tokens: 30+ semantic CSS variables in `:root` covering all colors, shadows, borders
+  - [x] Dark theme: `[data-theme="dark"]` forest-at-dusk palette, manual toggle, localStorage persistence
+  - [x] ThemeProvider context (`src/lib/theme.tsx`) with `useTheme()` hook
+  - [x] Anti-flash `<script>` in `layout.tsx` to prevent light-mode flash on reload
+  - [x] Language toggle button rendered in top-right toolbar (was missing — bug fix)
+  - [x] Theme toggle button (moon/sun icon) in top-right toolbar + auth pages
+  - [x] Login + register pages: dark mode support, i18n for all text (~15 `auth.*` keys)
+  - [x] AnalysisPanel.module.css: all hardcoded colors → CSS variables, slide-in animation, bar fill easing
+  - [x] Map.module.css: all hardcoded colors → CSS variables, button hover lift + shadow transitions
+  - [x] Map.tsx popup HTML: colors use CSS variables for dark mode compatibility
+  - [x] Mapbox popup dark mode overrides in globals.css
+  - [x] Build verification passed (Next.js 16 Turbopack, zero errors)
 
 ## Stage 7 — Bonus B: LiDAR CHM Analysis
 
