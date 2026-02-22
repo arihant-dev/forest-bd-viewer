@@ -50,7 +50,7 @@
 
 ## Stage 6 — Internationalization & Polish
 
-- [x] i18n system: React Context-based EN/FR dictionary with 60+ keys
+- [x] i18n system: React Context-based EN/FR dictionary with ~70 keys
 - [x] English as default language
 - [x] All Map.tsx strings translated (legend, popups, buttons)
 - [x] AnalysisPanel TFV labels translated via i18n dictionary
