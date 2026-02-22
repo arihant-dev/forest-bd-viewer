@@ -1,5 +1,7 @@
 # Forest BD Viewer — Ile-de-France
 
+![Main Map View](docs/images/04-forest-overview.png)
+
 A full-stack geospatial application for visualizing French forest data (BD Foret V2) and land parcels (Cadastre) across Ile-de-France departments (77, 78, 91, 95). Built with Go, Next.js, and PostGIS, designed to run entirely in Docker.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
@@ -8,6 +10,8 @@ A full-stack geospatial application for visualizing French forest data (BD Foret
 ---
 
 ## Overview
+
+![France Overview](docs/images/01-france-overview-dark.png)
 
 Authenticated users can:
 
@@ -142,6 +146,7 @@ Open http://localhost:3000/register and create a user. Authentication is require
 ```
 
 This downloads:
+
 - **Admin boundaries** (regions, departments, communes) from france-geojson and geo.api.gouv.fr
 - **Cadastre parcels** per commune from cadastre.data.gouv.fr
 
@@ -177,6 +182,9 @@ Reload the frontend. At zoom 14+, you should see color-coded forest polygons. Us
 
 ### Map Layers (zoom-dependent)
 
+![Administrative Drilldown](docs/images/02-departments-overview-dark.png)
+![Commune View](docs/images/03-municipalities-overview-dark.png)
+
 | Zoom Level | Layer | Interaction |
 |-----------|-------|-------------|
 | 5-7 | Regions | Click to zoom in |
@@ -186,6 +194,8 @@ Reload the frontend. At zoom 14+, you should see color-coded forest polygons. Us
 | 15+ | Cadastre parcels (overlay) | Click for parcel info |
 
 ### Polygon Analysis
+
+![Polygon Analysis Panel](docs/images/06-polygon-analysis.png)
 
 Click **"Analyse area"**, then click on the map to place vertices. Press **"Finish"** (or double-click) to complete the polygon. Results include:
 
@@ -198,6 +208,8 @@ Click **"Analyse area"**, then click on the map to place vertices. Press **"Fini
 The polygon is immovable after creation — close the panel or draw a new polygon to clear it.
 
 ### LiDAR CHM Analysis (Bonus B)
+
+![LiDAR CHM Overlay](docs/images/07-lidar-chm-overlay.png)
 
 When a polygon is drawn, the backend also queries IGN's LIDAR HD tile index for MNS (Digital Surface Model) and MNT (Digital Terrain Model) data. If coverage exists:
 
