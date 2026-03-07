@@ -392,3 +392,7 @@ npx tsc --noEmit        # Type check
 ## License
 
 MIT
+
+---
+
+By [Arihant Jain](https://arihant-jain.me)
