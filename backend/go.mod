@@ -1,12 +1,12 @@
 module forest-bd-viewer
 
-go 1.24.4
+go 1.25.0
 
 require (
 	github.com/99designs/gqlgen v0.17.86
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/golang-migrate/migrate/v4 v4.19.1
-	github.com/jackc/pgx/v5 v5.8.0
+	github.com/jackc/pgx/v5 v5.9.0
 	github.com/labstack/echo/v4 v4.15.0
 	github.com/redis/go-redis/v9 v9.18.0
 	github.com/spf13/viper v1.21.0
